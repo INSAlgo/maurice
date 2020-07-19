@@ -1,0 +1,8 @@
+user exists check : curl -X GET "https://www.hackerrank.com/rest/contests/master/hackers/" + username + "/profile" => | data => OK
+																								                      | null => DOESNT EXIST
+
+get algorithms count : curl -X GET https://www.hackerrank.com/rest/contests/master/tracks/algorithms/challenges?offset=0&limit=0 => use 'total' to get amount of algos.
+	=> get algorithms : curl -X GET https://www.hackerrank.com/rest/contests/master/tracks/algorithms/challenges?offset=0&limit=50 (cant get more than 50 at once)
+
+get recent challenges : curl -X GET https://www.hackerrank.com/rest/hackers/louis_gombert/recent_challenges?limit=20&cursor=&response_version=v2 (cursor=null)
+	=> get 'cursor' => curl -X GET https://www.hackerrank.com/rest/hackers/louis_gombert/recent_challenges?limit=20&cursor'new cursor'=&response_version=v2 (max is 20)
