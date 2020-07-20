@@ -8,6 +8,17 @@
 		"host" : "localhost",
 		"database" : "maurice",
 		"password" : "BOT Maurice",
-		"port" : 5432
+		"port" : 5432,
+		"schema" : "public",
+		"users_table" : "public.users",
+		"algorithms_table" : "public.challenges"
+	},
+	"difficultyEquivalents" : {
+
+		"easy": 10,
+		"medium" : 20,
+		"advanced" : 50,
+		"hard" : 100,
+		"expert" : 200
 	}
 }

@@ -1,5 +1,7 @@
 const hr_requests = require('./hr_requests.js')
+const APIError = require('./api_error.js');
 const bodyParser = require('body-parser');
+const db = require('./database.js');
 const express = require('express');
 const disc = require('discord.js');
 const events = require('events');
@@ -8,8 +10,8 @@ const ejs = require('ejs');
 const fs = require('fs');
 require('serve-static');
 const app = express();
-const db = require('./database.js');
-const APIError = require('./api_error.js');
+
+let lastRegen = 0;
 
 // obj
 const emitter = new events();
@@ -37,8 +39,22 @@ app.set('render engine', 'ejs')
 .use(bodyParser.json())
 .get('/', function (req, res) {
 
-  res.send('fuk u dummy')
-  res.sendStatus(200);
+  res.status(200).send('fuk u dummy')
+})
+.post('/regendb', function (req, res) {
+
+  // TODO : security check
+  if (Math.abs(lastRegen - (lastRegen = Date.now())) > 10*1000)
+    db.loadAllAlgorithms()
+    .then(dat => res.status(200).json(dat))
+    // un catch général, y'a beaucoup de raisons qui font que ça peut rater
+    // TODO : plusieurs catch en amont qui rethrowent une APIError correcte
+    .catch(err => {
+      console.error("[api][regendb] error occurred while doing regendb : " + err.stack)
+      res.sendStatus(500);
+    })
+  else
+    res.status(429).send('stop spamming u dumb fuck')
 })
 .post('/registerhrusr', function(req, res) {
 

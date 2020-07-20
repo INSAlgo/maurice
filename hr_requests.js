@@ -1,3 +1,7 @@
+const min = Math.min;
+const max = Math.max;
+const { difficultyEquivalents } = require('./config.json');
+
 module.exports = {
 
 	default_options : {
@@ -30,5 +34,15 @@ module.exports = {
 	getRecentResolvedFromCursor : function(username, count, cursor) {
 
 		return `https://www.hackerrank.com/rest/hackers/${username}/recent_challenges?limit=${min(max(0, count), 20)}&cursor=${cursor}&response_version=v2`		
+	},
+
+	difficultyToPoints : function(difficulty_name) {
+
+		return difficultyEquivalents[difficulty_name.toLowerCase()]
+	},
+
+	difficultyIndex : function(difficulty_name) {
+
+		return Object.keys(difficultyEquivalents).indexOf(difficulty_name.toLowerCase())
 	}
 }
