@@ -1,15 +1,25 @@
+const hr_requests = require('./hr_requests.js')
+const bodyParser = require('body-parser');
 const express = require('express');
 const disc = require('discord.js');
-const client = new disc.Client();
 const events = require('events');
-const emitter = new events();
+const ax = require('axios');
 const ejs = require('ejs');
 const fs = require('fs');
 require('serve-static');
 const app = express();
+const db = require('./database.js');
+const APIError = require('./api_error.js');
+
+// obj
+const emitter = new events();
+const client = new disc.Client();
 
 // todo use dotenv
-const { prefix, token } = require('./config.json');
+const { webUrl, token, prefix } = require('./config.json');
+
+//db
+db.connect();
 
 // load commands
 client.commands = new disc.Collection();
@@ -23,8 +33,33 @@ for (const file of commandFiles) {
 // setup web-server
 app.set('render engine', 'ejs')
 .use(express.static(__dirname + '/public'))
+.use(bodyParser.urlencoded({ extended: true }))
+.use(bodyParser.json())
 .get('/', function (req, res) {
+
   res.send('fuk u dummy')
+  res.sendStatus(200);
+})
+.post('/registerhrusr', function(req, res) {
+
+  if (req.body == undefined || req.body.discord_id === undefined || req.body.hr_username === undefined)
+    res.status(400).send('wrong data provided');
+  else
+    registerhrusr(req.body).then(result => {
+
+
+      console.log(`[api] bound ${req.body.discord_id} to hr account : ${req.body.hr_username}`);
+      res.status(200).send('ok');
+
+    }).catch(err => {
+
+      if (err.constructor.name == "APIError")
+        res.status(err.httpCode).send(err.msg);
+      else {
+        console.error(err);
+        res.sendStatus(500);
+      }
+    })
 })
 .listen(3000, function() {
 
@@ -35,9 +70,9 @@ app.set('render engine', 'ejs')
 // web-server running => connect discord bot
 emitter.on('server-running', function() {
 
-  console.log("[web] running mtfka");
+  console.log(`[web] running mtfka : ${webUrl}`);
   console.log("[discord] loaded " + client.commands.size + " commands");
-  client.login(token);
+  client.login(token).catch(err => console.error("error trying to connect to discord api", err));
 });
 
 // bot connecté
@@ -68,7 +103,7 @@ client.on('message', msg => {
   getCmd(client, command).then(
     // success
     (cmd) => {
-      console.log(`${msg.author.username}[${msg.author}] invoked {${cmd.name} | ${cmd.description}}`); 
+      console.log(`[discord][cmd_dispatcher] ${msg.author.username}[${msg.author}] invoked {${cmd.name} | ${cmd.description}}`); 
       cmd.execute(client, msg, args)
     },
 
@@ -79,3 +114,29 @@ client.on('message', msg => {
     }
   );
 });
+
+
+async function registerhrusr(body) {
+  
+  // ajouter check base de donnée
+  return db.isUserRegistered(body.discord_id, body.hr_username).then(in_use => {
+
+    if (in_use.discord_id) {
+      console.error(`[api] [check] user id ${body.discord_id} is already used`);
+      throw new APIError(400, "Provided Discord ID is already used by another HackerRank account")
+    }
+    else if (in_use.hr_username) {
+      console.log(`[api] [check] hr username ${body.hr_username} is already used`);
+      throw new APIError(400, "Provided HackerRank account is already used by another Discord ID")
+    }
+    else
+      return ax.get(hr_requests.getUser(body.hr_username), hr_requests.default_options)  // hackerrank account exists?
+          .catch(err => {
+              if (err.response.status == 404) {
+                throw new APIError(400, "HackerRank account doesn't exist");
+              } else
+                console.error(err.stack);
+            })
+          .then(() => db.insertUser(body.discord_id, body.hr_username))
+  });
+}

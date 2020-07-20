@@ -1,4 +1,5 @@
-let departs = require('../departs.js')("88.138.153.165:3000");
+let { webUrl } = require('../config.json')
+let departs = require('../departs.js')(webUrl);
 
 module.exports = {
 	name: 'dep',

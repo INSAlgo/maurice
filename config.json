@@ -1,4 +1,13 @@
 {
-	"token" : "NzMwODM0MjQwMTg2NDgyNzc4.XxOAtA.FpBs738S2sqexE0syhesAOVZelc",
-	"prefix" : "!"
+	"webUrl" : "",
+	"token" : "",
+	"prefix" : "!",
+	"db_info" : {
+		
+		"user" : "maurice",
+		"host" : "localhost",
+		"database" : "maurice",
+		"password" : "BOT Maurice",
+		"port" : 5432
+	}
 }
