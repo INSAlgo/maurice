@@ -13,24 +13,36 @@ const app = express();
 
 let lastRegen = 0;
 
-// obj
+// events
 const emitter = new events();
-const client = new disc.Client();
+// instanciate discord.js client
+client = new disc.Client();
 
 // todo use dotenv
-const { webUrl, token, prefix } = require('./config.json');
+const { webUrl, token, prefix, scoreboard_refresh } = require('./config.json');
 
-//db
-db.connect();
+// initialisation
+db.connect(function(info) {
+  console.log("[database] connected... running web-server");
+  app.listen(3000, function() {
+    emitter.emit('server-running')
+  });
+});
 
-// load commands
-client.commands = new disc.Collection();
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+// web-server running => connect discord bot
+emitter.on('server-running', function() {
 
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.name, command);
-}
+  console.log(`[web] running mtfka : ${webUrl}`);
+  console.log("[discord] connecting bot to discord api");
+  client.login(token).catch(err => console.error("error trying to connect to discord api", err));
+  console.log("[discord] loaded " + client.commands.size + " commands");
+
+  console.log("[timer] starting scoreboard timer");
+
+  emitter.emit('scoreboard-update');
+  setInterval(() => emitter.emit('scoreboard-update'), scoreboard_refresh)
+});
+ 
 
 // setup web-server
 app.set('render engine', 'ejs')
@@ -41,7 +53,68 @@ app.set('render engine', 'ejs')
 
   res.status(200).send('fuk u dummy')
 })
-.post('/regendb', function (req, res) {
+.post('/mult', function(req, res) {
+
+  let json = req.body;
+  if (json.slug == undefined || json.multiplier == undefined || json.slug.constructor.name != "String" || json.multiplier.constructor.name != "Number")
+    res.status(400).send('wrong data provided. are you dumb, stupid or dumb ? huh?');
+  
+  else {
+
+    db.applyMultiplier(json.slug, json.multiplier)
+    .then(updated => {
+
+      if (updated)
+        res.sendStatus(200)
+      else
+        res.status(400).send(`slug ${json.slug} provided doesn't correspond to any registered challenges`)
+
+    })
+    .catch(err => res.status(err.httpCode).send(err.msg))
+  }
+})
+.post('/multcat', function(req, res) {
+
+  let json = req.body;
+  if (json.category == undefined || json.multiplier == undefined || json.category.constructor.name != "String" || json.multiplier.constructor.name != "Number")
+    res.status(400).send('wrong data provided. are you dumb, stupid or dumb ? huh?');
+  
+  else {
+
+    db.applyCategoryMultiplier(json.category, json.multiplier)
+    .then(updated => {
+
+      if (updated)
+        res.sendStatus(200)
+      else
+        res.status(400).send(`category ${json.category} provided doesn't correspond to any registered challenges`)
+
+    })
+    .catch(err => res.status(err.httpCode).send(err.msg))
+  }
+})
+.get('/scoreboard', function(req, res) {
+
+  db.getScoreboard(req.query.limit != undefined ? req.query.limit : 10)
+  .then(qres => {
+    if (qres)
+      res.status(200).json(qres)
+    else
+      res.status(400).send(`category ${json.category} provided doesn't correspond to any registered challenges`)
+  })
+  .catch(err => res.status(err.httpCode).send(err.msg))
+
+})
+.get('/event', function(req, res) {
+
+  db.specialChallenges().then( (rows) => res.status(200).json(rows) )
+  .catch(err => res.status(err.httpCode).send(err.msg))
+})
+.get('/lowik', function (req, res) {
+  res.status(200).send(`<html><head></head><body><img src="https://i.kym-cdn.com/photos/images/newsfeed/001/550/907/d41.jpg" /><audio
+      autoplay src="https://www.mboxdrive.com/there-is-no-meme-take-off-your-clothes.mp3"></audio></body></html>`);
+})
+.get('/regendb', function (req, res) {
 
   // TODO : security check
   if (Math.abs(lastRegen - (lastRegen = Date.now())) > 10*1000)
@@ -59,13 +132,12 @@ app.set('render engine', 'ejs')
 .post('/registerhrusr', function(req, res) {
 
   if (req.body == undefined || req.body.discord_id === undefined || req.body.hr_username === undefined)
-    res.status(400).send('wrong data provided');
+    res.status(400).send('wrong data provided. are you dumb, stupid or dumb ? huh?');
   else
     registerhrusr(req.body).then(result => {
 
-
       console.log(`[api] bound ${req.body.discord_id} to hr account : ${req.body.hr_username}`);
-      res.status(200).send('ok');
+      res.sendStatus(200);
 
     }).catch(err => {
 
@@ -77,19 +149,21 @@ app.set('render engine', 'ejs')
       }
     })
 })
-.listen(3000, function() {
 
-  console.log("running");
-  emitter.emit('server-running')
-});
+/* ___ ___ ___   _______  ___  ___
+* |   \\ // __) / __/ _ \| _ \|   \  
+* | |)|| |\__ \| (_| (_) |   /| |) | 
+* |___//_\|___/ \___\___/|_|_\|___/  
+*/
 
-// web-server running => connect discord bot
-emitter.on('server-running', function() {
+// load commands
+client.commands = new disc.Collection();
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
-  console.log(`[web] running mtfka : ${webUrl}`);
-  console.log("[discord] loaded " + client.commands.size + " commands");
-  client.login(token).catch(err => console.error("error trying to connect to discord api", err));
-});
+for (const file of commandFiles) {
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.name, command);
+}
 
 // bot connecté
 client.on('ready', () => console.log("[discord] i'm in pussies : id = " + client.user.id))
@@ -131,7 +205,33 @@ client.on('message', msg => {
   );
 });
 
+/*
+ * TIMER RELATED FUNCTIONS
+ */
+emitter.on('scoreboard-update', function () {
 
+  console.log('[api][scoreboard-update] update time! but first let\'s refresh the db');
+  ax.get(`http://${webUrl}/regendb`).then(res => {
+    if (res.status != 500) {
+      console.log('[api][scoreboard-update] updating scoreboard')
+      
+      db.updateScoreboard()
+      .then(res => {
+        console.log(`[api][scoreboard-update] scoreboard updated`, res)
+      })
+    } else
+      throw new Error('[api][scoreboard-update] error while regenerating database. aborting scoreboard update')
+  })
+  .catch(err => console.error("[api][scoreboard-update] scoreboard update failed ", err))
+})
+
+
+/*
+* WEB REQUEST RELATED FUNCTIONS 
+*/
+
+
+// enregistre un utilisateur grâce à un body : {body.discord_id, body.hr_username}
 async function registerhrusr(body) {
   
   // ajouter check base de donnée

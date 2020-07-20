@@ -7,7 +7,7 @@ module.exports = {
 	default_options : {
 		headers: {
       		"Accept" : "application/json",
-      		"User-Agent" : "maurice/1.0.0"
+      		"User-Agent" : "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0"
     	}
 	},
 
@@ -24,6 +24,11 @@ module.exports = {
 	getAlgorithms : function(offset, count) {
 
 		return `https://www.hackerrank.com/rest/contests/master/tracks/algorithms/challenges?offset=${offset}&limit=${min(max(0, count), 50)}"`
+	},
+
+	getMostRecentCursor : function(username, count) {
+
+		return getRecentResolved(username, 1)
 	},
 
 	getRecentResolved : function(username, count) {

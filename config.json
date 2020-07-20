@@ -20,5 +20,6 @@
 		"advanced" : 50,
 		"hard" : 100,
 		"expert" : 200
-	}
+	},
+	"scoreboard_refresh" : 120000
 }
