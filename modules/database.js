@@ -1,4 +1,4 @@
-const { db_info, date_lower_bound } = require('./web_api_config.json');
+const { db_info, date_lower_bound } = require('../config/web_api_config.json');
 const hr_requests = require('./hr_requests.js')
 const APIError = require('./api_error.js');
 const { Pool,  Client } = require('pg');
@@ -214,44 +214,8 @@ async function updateScoreboard() {
 			requests.push(ax.get(hr_requests.getRecentResolved(data.users[i].hr_username, 1000), hr_requests.default_options))
 
 		// run the requests in safe-mode (if one crashes the others wont)
-		return Promise.allSettled(requests).then(resps => {
- 
- 			// prepare a promise for each user to treat its data if the request was successful
- 			const promises = [];
-			for (let i = 0; i < resps.length; ++i) {
-				if (resps[i].status !== "fulfilled") {
-					console.error(`[api][update-scoreboard] user ${data.users[i].hr_username} produces error on hr api`)
-					console.error(`reason : ${resps[i].reason}`)
-					continue;
-				}
-				const user_response = resps[i].value;
+		return Promise.allSettled(requests).then(resps => Promise.allSettled(makeScoreEvaluationPromises(resps, data))) // evaluate scores
 
-				// promise that processes the user's recent challenges data
-				const promise = new Promise((resol, rej) => {
-
-					// evaluate score to add from the data gotten and fetch more data if needed
-					evaluateUserScore(data.users[i], user_response, data.challenges)
-					.then(res => {
-
-						// set last challenge and new score
-						return updateUserInfos(res.hr_username, res.score, res.last_challenge_slug, res.more.newChallenges.length, res.more.unknownChallenges.length)
-								.then(rowCount => console.log(`[api] updated ${data.users[i].hr_username}'s score to ${res.score} thanks to ${res.more.newChallenges.length} new challenges resolved (sadly ${res.more.unknownChallenges.length} new unknowns)`))
-								.then( () => resol(res))
-								.catch(err => {
-									console.error('[api][update-scoreboard]', err)
-									rej(err)
-								})
-
-					})
-					.catch(err => rej(err))
-				})
-
-				promises.push(promise);
-			}
-
-			// run all promises
-			return Promise.allSettled(promises)
-		})
 	// when the scores have been evaluated for all of the users
 	}).then( results => { 
 
@@ -279,6 +243,43 @@ async function updateScoreboard() {
 	})
 }
 
+// used only in updateScoreboard()
+function makeScoreEvaluationPromises(resps, data) {
+
+	// prepare a promise for each user to treat its data if the request was successful
+ 	const promises = [];
+	for (let i = 0; i < resps.length; ++i) {
+		if (resps[i].status !== "fulfilled") {
+			console.error(`[api][update-scoreboard] user ${data.users[i].hr_username} produces error on hr api`)
+			console.error(`reason : ${resps[i].reason}`)
+			continue;
+		}
+
+		const user_response = resps[i].value;
+		// promise that processes the user's recent challenges data
+		const promise = new Promise((resol, rej) => {
+			// evaluate score to add from the data gotten and fetch more data if needed
+			evaluateUserScore(data.users[i], user_response, data.challenges)
+			.then(res => {
+				// set last challenge and new score
+				return updateUserInfos(res.hr_username, res.score, res.last_challenge_slug, res.more.newChallenges.length, res.more.unknownChallenges.length)
+						.then(rowCount => console.log(`[api] updated ${data.users[i].hr_username}'s score to ${res.score} thanks to ${res.more.newChallenges.length} new challenges resolved (sadly ${res.more.unknownChallenges.length} new unknowns)`))
+						.then( () => resol(res))
+						.catch(err => {
+							console.error('[api][update-scoreboard]', err)
+							rej(err)
+						})
+			})
+			.catch(err => rej(err))
+		})
+		
+		promises.push(promise);
+	}
+
+	return promises;
+}
+
+// evaluate a user's score using a first recentChallenges <=> user_response from the HR API
 async function evaluateUserScore(user_info, user_response, challenges) {
 	
 	// easier access
@@ -340,6 +341,7 @@ async function evaluateUserScore(user_info, user_response, challenges) {
 	return evaluatePoints(user_response_data);
 }
 
+// update user data in db
 async function updateUserInfos(hr_username, score, last_challenge_slug, new_challenges_count, new_unknown_count) {
 
 	if (score.constructor.name != "Number")

@@ -1,8 +1,8 @@
-const table_format = require('ascii-data-table').default;
-const hr_requests = require('./hr_requests.js')
-const APIError = require('./api_error.js');
+const { prettyPrintScoreboard, markdownPrettyPrint, uglyPrintScoreboard } = require('./modules/print_utils.js')
+const hr_requests = require('./modules/hr_requests.js')
+const APIError = require('./modules/api_error.js');
 const bodyParser = require('body-parser');
-const db = require('./database.js');
+const db = require('./modules/database.js');
 const express = require('express');
 const disc = require('discord.js');
 const events = require('events');
@@ -12,22 +12,22 @@ const fs = require('fs');
 require('serve-static');
 const app = express();
 
-
-let lastRegen = 0;
 // c'est infame, j'ai honte de moi
 let last_scoreboard_update = undefined;
 
 // todo use dotenv
-const { token, prefix, channels, scoreboard_size, permissions } = require('./maurice_config.json');
-const scoreboard_refresh_bot = require('./maurice_config.json').scoreboard_refresh;
-const scoreboard_refresh_api = require('./web_api_config.json').scoreboard_refresh;
-const { webUrl } = require('./web_api_config.json');
+const { token, prefix, channels, scoreboard_size, permissions } = require('./config/maurice_config.json');
+const scoreboard_refresh_bot = require('./config/maurice_config.json').scoreboard_refresh;
+const scoreboard_refresh_api = require('./config/web_api_config.json').scoreboard_refresh;
+const { webUrl } = require('./config/web_api_config.json');
 
 // events
 const emitter = new events();
+// WARNING : find better solution, maybe a single module to get this emitter ? 
+global.emitter = emitter;
+
 // instanciate discord.js client
 client = new disc.Client();
-
 
 // initialisation
 db.connect(function(info) {
@@ -64,169 +64,18 @@ emitter.on('server-running', function() {
 app.set('render engine', 'ejs')
 .use(express.static(__dirname + '/public'))
 .use(bodyParser.urlencoded({ extended: true }))
-.use(bodyParser.json())
-.get('/', function (req, res) {
-
-  res.status(200).send('fuk u dummy')
-})
-.post('/mult', function(req, res) {
-
-  let json = req.body;
-  if ( !json.slug || !json.multiplier || json.slug.constructor.name != "String" || json.multiplier.constructor.name != "Number")
-    res.status(400).send('wrong data provided. are you dumb, stupid or dumb ? huh?');
-  
-  else {
-
-    db.applyMultiplier(json.slug, json.multiplier)
-    .then(updated => {
-
-      if (updated)
-        res.sendStatus(200)
-      else
-        res.status(400).send(`slug ${json.slug} provided doesn't correspond to any registered challenges`)
-
-    })
-    .catch(err => res.status(err.httpCode).send(err.msg))
-  }
-})
-.post('/multcat', function(req, res) {
-
-  let json = req.body;
-  if ( !json.category || !json.multiplier || json.category.constructor.name != "String" || json.multiplier.constructor.name != "Number")
-    res.status(400).send('wrong data provided. are you dumb, stupid or dumb ? huh?');
-  
-  else {
-
-    db.applyCategoryMultiplier(json.category, json.multiplier)
-    .then(updated => {
-
-      if (updated)
-        res.sendStatus(200)
-      else
-        res.status(400).send(`category ${json.category} provided doesn't correspond to any registered challenges`)
-
-    })
-    .catch(err => res.status(err.httpCode).send(err.msg))
-  }
-})
-.get('/scoreboard', function(req, res) {
-
-  db.getScoreboard(req.query.limit || 10)
-  .then(qres => {
-
-    if (qres) {
-      if (req.query.pretty)
-        res.status(200).send(prettyPrintScoreboard(qres))
-      else
-        res.status(200).json(qres)
-    }
-    else
-      res.status(400).send(`category ${json.category} provided doesn't correspond to any registered challenges`)
-  })
-  .catch(err => console.error(err))
-  .catch(err => res.status(err.httpCode).send(err.msg))
-
-})
-.get('/scoreboard_refresh', function(req, res) {
-
-  // on utilise les events ici psq scoreboard-update utilise les event pour se trigger périodiquement
-  // c'est plus simple comme ça
-  const resetListeners = function(res, info) {
-
-    emitter.removeListener('scoreboard-updated-api', success);
-    emitter.removeListener('scoreboard-update-failed-api', error);
-    try {
-      res.status(info[0]).send(`${info[1]} ${ (info[2] && info[2].length > 0) ? `=> ${info[2]}` : ""}`);
-    } catch(err) {
-      // déjà répondu on s'en branle
-    }
-  }
-  const error = (code, desc, text) => resetListeners(res, [code, desc, text])
-  const success = () => {
-
-    updateDiscordScoreboard()
-    .then(resetListeners(res, [200, "OK", ""]))
-    .catch(resetListeners(res, [500, "Internal Server Error", ""]))
-  }
-
-  emitter.once('scoreboard-updated-api', success)
-  emitter.once('scoreboard-update-failed-api', error)
-  emitter.emit('scoreboard-update-api');
-})
-.get('/event', function(req, res) {
-
-  db.specialChallenges().then( (rows) => res.status(200).json(rows) )
-  .catch(err => res.status(err.httpCode).send(err.msg))
-})
-.get('/lowik', function (req, res) {
-  res.status(200).send(`<html><head></head><body><img src="https://i.kym-cdn.com/photos/images/newsfeed/001/550/907/d41.jpg" /><audio
-      autoplay src="https://www.mboxdrive.com/there-is-no-meme-take-off-your-clothes.mp3"></audio></body></html>`);
-})
-.get('/regendb', function (req, res) {
-
-  // TODO : security check
-  if (Math.abs(lastRegen - (lastRegen = Date.now())) > 10*1000)
-    db.loadAllAlgorithms()
-    .then(dat => res.status(200).json(dat))
-    // un catch général, y'a beaucoup de raisons qui font que ça peut rater
-    // TODO : plusieurs catch en amont qui rethrowent une APIError correcte
-    .catch(err => {
-      console.error("[api][regendb] error occurred while doing regendb : " + err.stack)
-      res.sendStatus(500);
-    })
-  else
-    res.status(429).send('stop spamming u dumb fuck')
-})
-.post('/registerhrusr', function(req, res) {
-
-  if (!req.body || !req.body.discord_id || !req.body.hr_username)
-    res.status(400).send('wrong data provided. are you dumb, stupid or dumb ? huh?');
-  else
-    registerhrusr(req.body).then(result => {
-
-      console.log(`[api] bound ${req.body.discord_id} to hr account : ${req.body.hr_username}`);
-      res.sendStatus(200);
-
-    }).catch(err => {
-
-      if (err.constructor.name == "APIError")
-        res.status(err.httpCode).send(err.msg);
-      else {
-        console.error(err);
-        res.sendStatus(500);
-      }
-    })
-})
-
+.use(bodyParser.json());
+// load routes & print them
+console.log(require('./routes/routes.js').loadRoutes(app))
 /* ___ ___ ___   _______  ___  ___
 * |   \\ // __) / __/ _ \| _ \|   \  
 * | |)|| |\__ \| (_| (_) |   /| |) | 
 * |___//_\|___/ \___\___/|_|_\|___/  
 */
 
-/**
- *
- *  // BYPASS CMDS
- *  // CODE & CONFIG
- *  "permissions" : {
- *   "admin" : 709091409746985002,
- *   "bypass" : ["..."]
- *  }
- *
- *  
- *  // GRP LIST, 0 <=> BYPASS
- *  // LIBERTE
- *  "permissions" : {
- *    "cmd" : [709091409746985002],
- *    "cmd2" : [709091409746985002]
- *  }
- *
-**/
-
 // load commands
 client.commands = new disc.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
   client.commands.set(command.name, command);
@@ -242,10 +91,8 @@ client.on('ready', () => {
 // reception msg discord
 client.on('message', msg => {
   
-  if (!msg.content.startsWith(prefix) || msg.author.bot || (msg.channel.id != channels.spambot_id && msg.channel.id != channels.scoreboard_id)) {
-    msg.delete({timeout:1000})
+  if (!msg.content.startsWith(prefix) || msg.author.bot || (msg.channel.id != channels.spambot_id && msg.channel.id != channels.scoreboard_pretty_id && msg.channel.id != scoreboard_ugly_id))
     return;
-  }
 
   const args = msg.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
@@ -284,10 +131,7 @@ client.on('message', msg => {
   );
 });
 
-/*
- * TIMER RELATED FUNCTIONS
- */
-
+// when an api scoreboard update is requested
 emitter.on('scoreboard-update-api', function () {
 
   console.log('[api][scoreboard-update] update time! but first let\'s refresh the db');
@@ -326,7 +170,6 @@ emitter.on('scoreboard-update-api', function () {
   })
 })
 
-
 // updates the message in scoreboard channel
 emitter.on('scoreboard-update-discord', function () {
 
@@ -335,19 +178,16 @@ emitter.on('scoreboard-update-discord', function () {
 
 function updateDiscordScoreboard() {
 
-    // WARNING : maybe the channel isn't cached and .get will give undefined. prefer use of fetch
+  // WARNING : maybe the channel isn't cached and .get will give undefined. prefer use of fetch
   const scorechan_ugly = client.channels.cache.get(channels.scoreboard_ugly_id)
   const scorechan_pretty = client.channels.cache.get(channels.scoreboard_pretty_id)
   const spamchan = client.channels.cache.get(channels.spambot_id)
 
   
-  if (scorechan_ugly == undefined || scorechan_ugly.type != 'text')
-    return console.error(`[discord][scoreboard-update] IMPORTANT! the ugly scoreboard channel id you provided doesn't point to any TEXT based channel, please change this in maurice.json`)
+  if ((!scorechan_ugly || scorechan_ugly.type != 'text') && (!scorechan_pretty || scorechan_pretty.type != 'text'))
+    return console.error(`[discord][scoreboard-update] IMPORTANT! none of the (pretty / ugly) scoreboard channel id point to any TEXT based channel, please change this in maurice.json`)
 
-  if (scorechan_pretty == undefined || scorechan_pretty.type != 'text')
-    return console.error(`[discord][scoreboard-update] IMPORTANT! the pretty scoreboard channel id you provided doesn't point to any TEXT based channel, please change this in maurice.json`)
-
-  if (spamchan == undefined || spamchan.type != 'text')
+  if (!spamchan || spamchan.type != 'text')
     return console.error(`[discord][scoreboard-update] IMPORTANT! the spam channel id you provided doesn't point to any TEXT based channel, please change this in maurice.json`)
 
   console.log(`[discord][scoreboard-update] updating scoreboard in channels ${channels.scoreboard_pretty_id} & ${channels.scoreboard_ugly_id}`)
@@ -410,76 +250,4 @@ function updateDiscordScoreboard() {
   );
 
   return Promise.allSettled([updateUgly, updatePretty, sendDiscordUpdateMessages])
-}
-/*
-* WEB REQUEST RELATED FUNCTIONS 
-*/
-
-
-// enregistre un utilisateur grâce à un body : {body.discord_id, body.hr_username}
-async function registerhrusr(body) {
-
-  // ajouter check base de donnée
-  return db.isUserRegistered(body.discord_id, body.hr_username).then(in_use => {
-
-    if (in_use.discord_id) {
-      console.error(`[api] [check] user id ${body.discord_id} is already used`);
-      throw new APIError(400, "Provided Discord ID is already used by another HackerRank account")
-    }
-    else if (in_use.hr_username) {
-      console.log(`[api] [check] hr username ${body.hr_username} is already used`);
-      throw new APIError(400, "Provided HackerRank account is already used by another Discord ID")
-    }
-    else
-      return ax.get(hr_requests.getUser(body.hr_username), hr_requests.default_options)  // hackerrank account exists?
-          .catch(err => {
-              if (err.response.status == 404) {
-                throw new APIError(400, "HackerRank account doesn't exist");
-              } else
-                console.error(err.stack);
-            })
-          .then(() => db.insertUser(body.discord_id, body.hr_username))
-  });
-
-}
-
-function uglyPrintScoreboard(qres) {
-
-  return '**Hacker Rank Leaderboard**\n' + qres.map( (userdata, i) => {
-
-    let temp;
-    
-    // WARNING : risky, maybe (idk for what reason) the user isn't cached. will get undefined instead of it's name
-    //discord_name = ((temp = client.users.cache.get(userdata.discord_id)) && temp.username) || "not cached";
-    return `${qres.length - i}. <@${userdata.discord_id}>  ${userdata.score}`
-  }).reverse().join("\n");
-}
-
-function prettyPrintScoreboard(qres) {
-
-  const toFormat = [];
-  let last_challenge_slug, discord_name;
-
-  for (let userdata of qres) {
-
-    // WARNING : risky, maybe (idk for what reason) the user isn't cached. will get undefined instead of it's name
-    let temp;
-    discord_name = ((temp = client.users.cache.get(userdata.discord_id)) && temp.username) || "not cached";
-    last_challenge_slug = userdata.last_challenge_slug || " X "
-    toFormat.unshift([discord_name, userdata.hr_username, userdata.score, last_challenge_slug])
-  }
-  toFormat.unshift(["discord", "hackerrank", "score", "dernier"])
-  return table_format.table(toFormat).replace(/\"/g," ");
-}
-
-function markdownPrettyPrint(qres) {
-
-      const table = prettyPrintScoreboard(qres).replace('╒', '╞').replace('╕', '╡')
-      const title = '** Hacker Rank Leaderboard **'
-      const top_bar = `╒${'═'.repeat(table.indexOf('\n') - 2 )}╕`;
-      const first_half_spacer = ' '.repeat( Math.ceil((top_bar.length - 2 - title.length)*.5) );
-      const scd_half_spacer = ' '.repeat(top_bar.length - first_half_spacer.length - 2 - title.length);
-      const middle_bar = `│${first_half_spacer}${title}${scd_half_spacer}│`
-
-      return `\`\`\`${top_bar}\n${middle_bar}\n${table}\`\`\``
 }

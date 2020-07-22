@@ -1,6 +1,6 @@
 const min = Math.min;
 const max = Math.max;
-const { difficultyEquivalents } = require('./web_api_config.json');
+const { difficultyEquivalents } = require('../config/web_api_config.json');
 
 module.exports = {
 
