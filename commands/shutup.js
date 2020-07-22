@@ -30,7 +30,7 @@ module.exports.execute = function (client, msg, args) {
           var count = 0;
           for (let msg of messages) {
             for (let a of msg)
-              if (a.author != undefined && a.author.id == clientId) {
+              if (a.author != undefined && a.author.id == clientId && !a.pinned) {
                 try {
                   channel.messages.delete(a);
                   count++;

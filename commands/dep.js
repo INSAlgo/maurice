@@ -1,4 +1,4 @@
-let { webUrl } = require('../config.json')
+let { webUrl } = require('../maurice_config.json')
 let departs = require('../departs.js')(webUrl);
 
 module.exports = {

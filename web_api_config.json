@@ -1,0 +1,25 @@
+{
+	"please check everything in configuration" : "even the date_lower_bound (requires timestamp (ms) from the universal time",
+	"webUrl" : "localhost:3000",
+	"db_info" : {
+		
+		"user" : "maurice",
+		"host" : "localhost",
+		"database" : "maurice",
+		"password" : "BOT Maurice",
+		"port" : 5432,
+		"schema" : "public",
+		"users_table" : "public.users",
+		"algorithms_table" : "public.challenges"
+	},
+	"difficultyEquivalents" : {
+
+		"easy": 10,
+		"medium" : 20,
+		"advanced" : 50,
+		"hard" : 100,
+		"expert" : 200
+	},
+	"scoreboard_refresh" : 120000,
+	"date_lower_bound" : 0
+}

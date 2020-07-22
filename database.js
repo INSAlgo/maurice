@@ -1,5 +1,5 @@
+const { db_info, date_lower_bound } = require('./web_api_config.json');
 const hr_requests = require('./hr_requests.js')
-const { db_info } = require('./config.json');
 const APIError = require('./api_error.js');
 const { Pool,  Client } = require('pg');
 const client = new Client(db_info);
@@ -16,11 +16,7 @@ module.exports = {
 	isUserRegistered : isUserRegistered,
 	specialChallenges : specialChallenges,
 	loadAllAlgorithms : loadAllAlgorithms,
-	applyCategoryMultiplier : applyCategoryMultiplier,
-
-	// TODO : remove access later
-	getOnlineAlgorithmCount : getOnlineAlgorithmCount,
-	getDatabaseAlgorithmCount : getDatabaseAlgorithmCount
+	applyCategoryMultiplier : applyCategoryMultiplier
 }
 
 
@@ -105,7 +101,7 @@ async function regenAlgorithmDatabase(total) {
 		requests.push(ax.get(hr_requests.getAlgorithms(i, step), hr_requests.default_options))
 
 	return ax.all(requests).then(ax.spread( (...resps) => {
-		let models = [];
+		const models = [];
 		let model;
 		for (let i = 0; i < resps.length; ++i)
 			for (let j = 0; j < resps[i].data.models.length; ++j) {
@@ -174,7 +170,7 @@ async function getScoreboard(limit) {
 	
 	return selectSchema()
 	.then( () => client.query(`SELECT * FROM ${db_info.users_table} ORDER BY ${db_info.users_table}.score, ${db_info.users_table}.discord_id::bigint LIMIT ${limit};`))
-	.then( (res) => { console.log(`[api][scoreboard] got ${res.rows.length} highest score holders`); return res.rows})
+	.then( (res) => res.rows)
 	.catch(err => { 
 		console.error(`[api][scoreboard] error occurred while trying to retrieve scoreboard`, err);
 		throw new APIError(500, "Couldn't retrieve scoreboard") 
@@ -185,7 +181,7 @@ async function updateScoreboard() {
 
 	return selectSchema() // select schema
 	// retrieve all of the users infos
-	.then( () => client.query(`SELECT ${db_info.users_table}.hr_username, ${db_info.users_table}.last_challenge_slug, ${db_info.users_table}.score FROM ${db_info.users_table}`))
+	.then( () => client.query(`SELECT ${db_info.users_table}.discord_id, ${db_info.users_table}.hr_username, ${db_info.users_table}.last_challenge_slug, ${db_info.users_table}.score FROM ${db_info.users_table}`))
 	.then( res => { // treat the data for score to have Number type 
 		
 		for (let i = 0; i < res.rows.length; ++i)
@@ -215,13 +211,13 @@ async function updateScoreboard() {
 		// prepare get requests for first batch of recent algos
 		const requests = [];
 		for (let i = 0; i < data.users.length; ++i)
-			requests.push(ax.get(hr_requests.getRecentResolved(data.users[i].hr_username, 20), hr_requests.default_options))
+			requests.push(ax.get(hr_requests.getRecentResolved(data.users[i].hr_username, 1000), hr_requests.default_options))
 
 		// run the requests in safe-mode (if one crashes the others wont)
 		return Promise.allSettled(requests).then(resps => {
  
  			// prepare a promise for each user to treat its data if the request was successful
- 			let promises = [];
+ 			const promises = [];
 			for (let i = 0; i < resps.length; ++i) {
 				if (resps[i].status !== "fulfilled") {
 					console.error(`[api][update-scoreboard] user ${data.users[i].hr_username} produces error on hr api`)
@@ -238,10 +234,8 @@ async function updateScoreboard() {
 					.then(res => {
 
 						// set last challenge and new score
-						return ax.get(hr_requests.getRecentResolved(data.users[i].hr_username, 1), hr_requests.default_options)
-								.then(req_res => req_res.data.models[0].ch_slug)
-								.then(slug => updateUserInfos(data.users[i].hr_username, res.score, slug))
-								.then(rowCount => console.log(`[api] updated ${data.users[i].hr_username}'s score to ${res.score}`))
+						return updateUserInfos(res.hr_username, res.score, res.last_challenge_slug, res.more.newChallenges.length, res.more.unknownChallenges.length)
+								.then(rowCount => console.log(`[api] updated ${data.users[i].hr_username}'s score to ${res.score} thanks to ${res.more.newChallenges.length} new challenges resolved (sadly ${res.more.unknownChallenges.length} new unknowns)`))
 								.then( () => resol(res))
 								.catch(err => {
 									console.error('[api][update-scoreboard]', err)
@@ -262,18 +256,26 @@ async function updateScoreboard() {
 	}).then( results => { 
 
 		// process data to remove failed requests and useless infos like "fulfilled" tag
-		let treated_results = [];
+		const treated_results = [];
+		const errors = [];
 		for (let res of results) {
-			if (res.value != undefined)
+			if (res.value != undefined) {
 				treated_results.push({
+					discord_id : res.value.discord_id,
 					hr_username: res.value.hr_username,
       				previousScore: res.value.previousScore,
       				score: res.value.score,
       				more: res.value.more != undefined ? res.value.more : ""
       			})
+			}
+			else
+				errors.push(res)
 		}
 
-		return treated_results;
+		return { treated_results : treated_results, errors : errors } ;
+	}).then(obj => {
+		console.log(obj.errors)
+		return obj.treated_results;
 	})
 }
 
@@ -288,20 +290,23 @@ async function evaluateUserScore(user_info, user_response, challenges) {
 	let score = user_info.score;
 
 	const unknownChallenges = [];
+	const newChallenges = [];
+
+	let new_last_challenge_slug = undefined;
 
 	// prepare function that gives a promise that gives the result of a http get request to hr api (last challenges from a cursor)
 	const getRecentResolved = function(cursor, count) {
 
+		// CHECK : peut etre qu'un return ax.get(...) suffirait
 		return new Promise( (resol, rej) => {
 
 			ax.get(hr_requests.getRecentResolvedFromCursor(username, count, cursor), hr_requests.default_options)
 			.then(res => resol(res.data)).catch(err => rej(err))
 		}) 
 	}
-	
 
 	// evaluates the score deserved by a user for resolving a group of algos
-	const evaluatePoints = function(response_data) { // TODO : add new completed challenges to result
+	const evaluatePoints = function(response_data) {
 
 		// if the guy resolved at least one algorithm (needed on top of the for to return properly)
 		if (response_data.models.length > 0)
@@ -312,18 +317,19 @@ async function evaluateUserScore(user_info, user_response, challenges) {
 				// if it isn't the last algorithm we check last time we updated the score (this means we're still on the recent side)
 				if (challenge.ch_slug != last_challenge_slug && !(response_data.last_page && i == response_data.models.length - 1)) {
 					const ch = challenges.get(challenge.ch_slug)
-					if (ch != undefined) // if the algorithm is known
-						score += parseFloat((hr_requests.difficultyToPoints(ch.difficulty) * ch.multiplier));
-					else {
-						console.log("unknown challenge")
+					if (ch != undefined) {// if the algorithm is known
+						if ((new Date(challenge.created_at)).getTime() >= date_lower_bound) {
+							new_last_challenge_slug = new_last_challenge_slug == undefined ? challenge.ch_slug : new_last_challenge_slug;
+							score += parseFloat((hr_requests.difficultyToPoints(ch.difficulty) * ch.multiplier));
+							newChallenges.push( {ch_slug : challenge.ch_slug, "challenge" : challenge } )
+						}
+					} else
 						unknownChallenges.push( { ch_slug : challenge.ch_slug, "challenge" : challenge } )
-					}
-
 				}
-				else return { hr_username : user_info.hr_username, previousScore : user_info.score, score : score, more : { stop_info : "normal behavior", "unknownChallenges" : unknownChallenges} }
+				else return { discord_id : user_info.discord_id, hr_username : user_info.hr_username, previousScore : user_info.score, score : score, last_challenge_slug : (new_last_challenge_slug == undefined ? last_challenge_slug : new_last_challenge_slug), more : { stop_info : "normal behavior", unknownChallenges : unknownChallenges, newChallenges : newChallenges } }
 			}
 		else
-			return { hr_username : user_info.hr_username, previousScore : user_info.score, score : score, more : { stop_info : "no algorithms resolved" } }
+			return { discord_id : user_info.discord_id, hr_username : user_info.hr_username, previousScore : user_info.score, score : score, last_challenge_slug : (new_last_challenge_slug == undefined ? last_challenge_slug : new_last_challenge_slug), more : { stop_info : "empty response, no challenges resolved?", unknownChallenges : unknownChallenges, newChallenges : newChallenges } }
 
 		// if we didn't return, there's still more algorithms to get from the api so let's do it fuckers
 		return getRecentResolved(response_data.cursor, 1000) // get new request and response data from the api (1000 in case the max limit augments, we'll not have to get back here and modify it)
@@ -334,14 +340,18 @@ async function evaluateUserScore(user_info, user_response, challenges) {
 	return evaluatePoints(user_response_data);
 }
 
-async function updateUserInfos(hr_username, score, last_challenge_slug) {
+async function updateUserInfos(hr_username, score, last_challenge_slug, new_challenges_count, new_unknown_count) {
 
 	if (score.constructor.name != "Number")
 		score = parseFloat(score);
 
+	if (new_challenges_count.constructor.name != "Number")
+		new_challenges_count = parseFloat(new_challenges_count);
+
+	if (new_unknown_count.constructor.name != "Number")
+		new_unknown_count = parseFloat(new_unknown_count);
+
 	return selectSchema()
-	.then( () => client.query(`UPDATE ${db_info.users_table} SET score=${score}, last_challenge_slug='${last_challenge_slug}' WHERE ${db_info.users_table}.hr_username='${hr_username}';`))
+	.then( () => client.query(`UPDATE ${db_info.users_table} SET score=${score}, last_challenge_slug='${last_challenge_slug}', total_resolved=(total_resolved+${new_challenges_count}), total_unknown_resolved=(total_unknown_resolved+${new_unknown_count}) WHERE ${db_info.users_table}.hr_username='${hr_username}';`))
 	.then(res => res.rowCount)
 }
-
-// TODO : then update last challenge
