@@ -1,5 +1,9 @@
+module.exports = {
+  updateDiscordScoreboard : updateDiscordScoreboard
+}
+
 const { prettyPrintScoreboard, markdownPrettyPrint, uglyPrintScoreboard } = require('./modules/print_utils.js')
-const hr_requests = require('./modules/hr_requests.js')
+const hr_endpoints = require('./modules/hr_endpoints.js')
 const APIError = require('./modules/api_error.js');
 const bodyParser = require('body-parser');
 const db = require('./modules/database.js');
@@ -66,7 +70,7 @@ app.set('render engine', 'ejs')
 .use(bodyParser.urlencoded({ extended: true }))
 .use(bodyParser.json());
 // load routes & print them
-console.log(require('./routes/routes.js').loadRoutes(app))
+console.log(require('./modules/routes.js').loadRoutes(app))
 /* ___ ___ ___   _______  ___  ___
 * |   \\ // __) / __/ _ \| _ \|   \  
 * | |)|| |\__ \| (_| (_) |   /| |) | 

@@ -6,6 +6,20 @@ Challenge, Compétition, Algorithmie
 ## C'est quoi cette bestiole
 Pour stimuler et faire vivre l'association après les [crises majeures](https://prologin.org/news/2020/03/29/prologin-2020-et-le-coronavirus-2019/) de 2020, notre génial bureau a pensé à créer un [robot Discord](https://top.gg/) offrant un nouveau moyen en temps réel de se [mesurer aux autres](https://fr.wikipedia.org/wiki/Bataille_de_pouces), et d'aller toujours plus loin pour progresser dans la discipline.
 
+## De quoi il a besoin ? <a name="requirements"></a>
+* Node ~12.18.2
+* Une connexion internet, mais bon c'est logique, c'est un bot discord et un serveur web quand même
+* Un [token de bot Discord](https://discord.com/developers/applications)
+* Un port ouvert pour les entrées et sorties du serveur web / API
+* Une base de données PostgreSQL (à renseigner dans `web_api_config.json`). Les tables du schéma utilisé (le nom de schéma est configurable) peuvent être générées grâce au script [`make_tables.sql`](https://github.com/INSAlgo/maurice/blob/master/sql/make_tables.sql)
+
+## Installation
+1. cloner le repo `git clone https://github.com/INSAlgo/maurice maurice`
+3. `cd maurice`
+2. installer les dépendances `npm install .`
+3. remplir correctement les fichiers de config dans `/config`
+4. lancer le bot `node server.js`
+
 ## Qu'est-ce qu'il va faire exactement?
 Au programme, scraping des profiles d'[Hackerrank](https://www.hackerrank.com/) pour établir un scoreboard des résolutions récentes des membres actifs de l'asso. Un cahier des charges précis va suivre.
 
@@ -31,12 +45,7 @@ Actuellement, le bot permet de :
 * Le serveur web réagit aux requêtes faites sur les [endpoints](https://github.com/INSAlgo/maurice/blob/master/routes) prévus puis répond
 * Périodiquement, l'API recalcule les points des utilisateurs et **Maurice** met à jour les messages contenant les scoreboard sur discord
 
-## De quoi il a besoin ? <a name="requirements"></a>
-* Node ~12.18.2, le reste des modules est normalement installé tout seul par node grâce aux fichiers `package.json` et `package-lock.json`
-* Une connexion internet, mais bon c'est logique, c'est un bot discord et un serveur web quand même
-* Un [token de bot Discord](https://discord.com/developers/applications)
-* Un port ouvert pour les entrées et sorties du serveur web / API
-* Une base de données PostgreSQL (à renseigner dans `web_api_config.json`). Les tables du schéma utilisé (le nom de schéma est configurable) peuvent être générées grâce au script [`make_tables.sql`](https://github.com/INSAlgo/maurice/blob/master/sql/make_tables.sql)
-
 ## Why
 for the [memes](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+
+

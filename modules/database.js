@@ -1,5 +1,5 @@
 const { db_info, date_lower_bound } = require('../config/web_api_config.json');
-const hr_requests = require('./hr_requests.js')
+const hr_endpoints = require('./hr_endpoints.js')
 const APIError = require('./api_error.js');
 const { Pool,  Client } = require('pg');
 const client = new Client(db_info);
@@ -61,7 +61,7 @@ async function insertUser(discord_id, hr_username) {
 
 async function getOnlineAlgorithmCount() {
 
-	return ax.get(hr_requests.getAlgorithmCount(), hr_requests.default_options)
+	return ax.get(hr_endpoints.getAlgorithmCount(), hr_endpoints.default_options)
 	.then(res => res.data.total)
 }
 
@@ -98,7 +98,7 @@ async function regenAlgorithmDatabase(total) {
 	const step = 50;
 	const requests = [];
 	for (let i = 0; i < total; i+= 50)
-		requests.push(ax.get(hr_requests.getAlgorithms(i, step), hr_requests.default_options))
+		requests.push(ax.get(hr_endpoints.getAlgorithms(i, step), hr_endpoints.default_options))
 
 	return ax.all(requests).then(ax.spread( (...resps) => {
 		const models = [];
@@ -169,7 +169,7 @@ async function applyCategoryMultiplier(cat, mult) {
 async function getScoreboard(limit) {
 	
 	return selectSchema()
-	.then( () => client.query(`SELECT * FROM ${db_info.users_table} ORDER BY ${db_info.users_table}.score, ${db_info.users_table}.discord_id::bigint LIMIT ${limit};`))
+	.then( () => client.query(`SELECT * FROM ${db_info.users_table} ORDER BY ${db_info.users_table}.score DESC, ${db_info.users_table}.discord_id::bigint LIMIT ${limit};`))
 	.then( (res) => res.rows)
 	.catch(err => { 
 		console.error(`[api][scoreboard] error occurred while trying to retrieve scoreboard`, err);
@@ -211,7 +211,7 @@ async function updateScoreboard() {
 		// prepare get requests for first batch of recent algos
 		const requests = [];
 		for (let i = 0; i < data.users.length; ++i)
-			requests.push(ax.get(hr_requests.getRecentResolved(data.users[i].hr_username, 1000), hr_requests.default_options))
+			requests.push(ax.get(hr_endpoints.getRecentResolved(data.users[i].hr_username, 1000), hr_endpoints.default_options))
 
 		// run the requests in safe-mode (if one crashes the others wont)
 		return Promise.allSettled(requests).then(resps => Promise.allSettled(makeScoreEvaluationPromises(resps, data))) // evaluate scores
@@ -301,7 +301,7 @@ async function evaluateUserScore(user_info, user_response, challenges) {
 		// CHECK : peut etre qu'un return ax.get(...) suffirait
 		return new Promise( (resol, rej) => {
 
-			ax.get(hr_requests.getRecentResolvedFromCursor(username, count, cursor), hr_requests.default_options)
+			ax.get(hr_endpoints.getRecentResolvedFromCursor(username, count, cursor), hr_endpoints.default_options)
 			.then(res => resol(res.data)).catch(err => rej(err))
 		}) 
 	}
@@ -315,17 +315,19 @@ async function evaluateUserScore(user_info, user_response, challenges) {
 			for (let i = 0; i < response_data.models.length; ++i) {
 				const challenge = response_data.models[i];
 
-				// if it isn't the last algorithm we check last time we updated the score (this means we're still on the recent side)
+				// if it isn't the last algorithm we checked last time we updated the score (this means we're still on the recent side of the list)
 				if (challenge.ch_slug != last_challenge_slug && !(response_data.last_page && i == response_data.models.length - 1)) {
 					const ch = challenges.get(challenge.ch_slug)
 					if (ch != undefined) {// if the algorithm is known
 						if ((new Date(challenge.created_at)).getTime() >= date_lower_bound) {
-							new_last_challenge_slug = new_last_challenge_slug == undefined ? challenge.ch_slug : new_last_challenge_slug;
-							score += parseFloat((hr_requests.difficultyToPoints(ch.difficulty) * ch.multiplier));
+							score += parseFloat((hr_endpoints.difficultyToPoints(ch.difficulty) * ch.multiplier));
 							newChallenges.push( {ch_slug : challenge.ch_slug, "challenge" : challenge } )
 						}
 					} else
 						unknownChallenges.push( { ch_slug : challenge.ch_slug, "challenge" : challenge } )
+
+					// now out of the if bc we want an accurate unknownChallenge count
+					new_last_challenge_slug = new_last_challenge_slug == undefined ? challenge.ch_slug : new_last_challenge_slug;
 				}
 				else return { discord_id : user_info.discord_id, hr_username : user_info.hr_username, previousScore : user_info.score, score : score, last_challenge_slug : (new_last_challenge_slug == undefined ? last_challenge_slug : new_last_challenge_slug), more : { stop_info : "normal behavior", unknownChallenges : unknownChallenges, newChallenges : newChallenges } }
 			}

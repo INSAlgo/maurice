@@ -1,8 +1,9 @@
 const emitter = global.emitter;
+const { updateDiscordScoreboard } = require('../server.js')
 
 module.exports = {
 
-	route : '/',
+	route : '/scoreboard_refresh',
 	method : 'get',
 	callback : function (req, res) {
 
@@ -20,7 +21,8 @@ module.exports = {
   		}
   		const error = (code, desc, text) => resetListeners(res, [code, desc, text])
   		const success = () => {
-		
+
+        // TODO CHECK IF WORKING ????		
   		  updateDiscordScoreboard()
   		  .then(resetListeners(res, [200, "OK", ""]))
   		  .catch(resetListeners(res, [500, "Internal Server Error", ""]))

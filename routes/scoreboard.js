@@ -1,4 +1,5 @@
 const { prettyPrintScoreboard } = require('../modules/print_utils.js')
+const db = require('../modules/database.js')
 
 module.exports = {
 
@@ -6,6 +7,7 @@ module.exports = {
 	method : 'get',
 	callback : function (req, res) {
 
+    console.log(req.query)
 	  db.getScoreboard(req.query.limit || 10)
   		.then(qres => {
 		
@@ -22,4 +24,3 @@ module.exports = {
   		.catch(err => res.status(err.httpCode).send(err.msg))
 	}
 }
-

@@ -1,4 +1,7 @@
+const hr_endpoints = require('../modules/hr_endpoints.js')
+const APIError = require('../modules/api_error.js');
 const db = require('../modules/database.js')
+const ax = require('axios')
 
 module.exports = {
 
@@ -41,7 +44,7 @@ async function registerhrusr(body) {
       throw new APIError(400, "Provided HackerRank account is already used by another Discord ID")
     }
     else
-      return ax.get(hr_requests.getUser(body.hr_username), hr_requests.default_options)  // hackerrank account exists?
+      return ax.get(hr_endpoints.getUser(body.hr_username), hr_endpoints.default_options)  // hackerrank account exists?
           .catch(err => {
               if (err.response.status == 404) {
                 throw new APIError(400, "HackerRank account doesn't exist");
