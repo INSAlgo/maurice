@@ -33,7 +33,7 @@ function prettyPrintScoreboard(qres) {
     toFormat.unshift([discord_name, userdata.hr_username, userdata.score, last_challenge_slug])
   }
   toFormat.unshift(["discord", "hackerrank", "score", "dernier"])
-  return table_format.table(toFormat).replace(/\"/g," ");
+  return table_format.table(toFormat).replace(/"/g," ");
 }
 
 function markdownPrettyPrint(qres) {

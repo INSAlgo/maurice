@@ -7,7 +7,7 @@ module.exports = {
 	callback : function(req, res) {
 
   		let json = req.body;
-  		if ( !json.slug || !json.multiplier || json.slug.constructor.name != "String" || json.multiplier.constructor.name != "Number" )
+  		if ( !json.slug || !json.multiplier || json.slug.constructor.name !== "String" || json.multiplier.constructor.name !== "Number" )
   		  res.status(400).send('wrong data provided. are you dumb, stupid or dumb ? huh?');
   		
   		else {

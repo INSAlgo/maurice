@@ -3,15 +3,12 @@ module.exports = {
 }
 
 const { prettyPrintScoreboard, markdownPrettyPrint, uglyPrintScoreboard } = require('./modules/print_utils.js')
-const hr_endpoints = require('./modules/hr_endpoints.js')
-const APIError = require('./modules/api_error.js');
 const bodyParser = require('body-parser');
 const db = require('./modules/database.js');
 const express = require('express');
 const disc = require('discord.js');
 const events = require('events');
 const ax = require('axios');
-const ejs = require('ejs');
 const fs = require('fs');
 require('serve-static');
 const app = express();
@@ -34,13 +31,14 @@ global.emitter = emitter;
 client = new disc.Client();
 
 // initialisation
-db.connect(function(info) {
+console.log("[startup] trying to connect to db")
+db.connect(function() {
   console.log("[database] connected... running web-server");
   
   // start web-server
   app.listen(3000, function() {
     emitter.emit('server-running')
-  });
+  })
 });
 
 // web-server running => connect discord bot
@@ -70,14 +68,15 @@ app.set('render engine', 'ejs')
 .use(bodyParser.urlencoded({ extended: true }))
 .use(bodyParser.json());
 // load routes & print them
-console.log(require('./modules/routes.js').loadRoutes(app))
+console.log("[startup] registered routes : ", require('./modules/routes.js').loadRoutes(app))
+
 /* ___ ___ ___   _______  ___  ___
 * |   \\ // __) / __/ _ \| _ \|   \  
 * | |)|| |\__ \| (_| (_) |   /| |) | 
 * |___//_\|___/ \___\___/|_|_\|___/  
 */
 
-// load commands
+// load discord commands
 client.commands = new disc.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
@@ -95,7 +94,7 @@ client.on('ready', () => {
 // reception msg discord
 client.on('message', msg => {
   
-  if (!msg.content.startsWith(prefix) || msg.author.bot || (msg.channel.id != channels.spambot_id && msg.channel.id != channels.scoreboard_pretty_id && msg.channel.id != scoreboard_ugly_id))
+  if (!msg.content.startsWith(prefix) || msg.author.bot || (msg.channel.id !== channels.spambot_id && msg.channel.id !== channels.scoreboard_pretty_id && msg.channel.id !== channels.scoreboard_ugly_id))
     return;
 
   const args = msg.content.slice(prefix.length).trim().split(/ +/);
@@ -163,7 +162,7 @@ emitter.on('scoreboard-update-api', function () {
   .catch(err => {
 
     // à ne catch que par l'api puisque théoriquement on doit pouvoir séparer totalement le bot et l'api    
-    if (err.response != undefined) {
+    if (err.response !== undefined) {
       emitter.emit('scoreboard-update-failed-api', err.response.status, err.response.statusText, err.response.data);
       console.error(`[api][scoreboard-update] scoreboard update failed : ${err.response.data}`)
     }
@@ -188,10 +187,10 @@ function updateDiscordScoreboard() {
   const spamchan = client.channels.cache.get(channels.spambot_id)
 
   
-  if ((!scorechan_ugly || scorechan_ugly.type != 'text') && (!scorechan_pretty || scorechan_pretty.type != 'text'))
+  if ((!scorechan_ugly || scorechan_ugly.type !== 'text') && (!scorechan_pretty || scorechan_pretty.type !== 'text'))
     return console.error(`[discord][scoreboard-update] IMPORTANT! none of the (pretty / ugly) scoreboard channel id point to any TEXT based channel, please change this in maurice.json`)
 
-  if (!spamchan || spamchan.type != 'text')
+  if (!spamchan || spamchan.type !== 'text')
     return console.error(`[discord][scoreboard-update] IMPORTANT! the spam channel id you provided doesn't point to any TEXT based channel, please change this in maurice.json`)
 
   console.log(`[discord][scoreboard-update] updating scoreboard in channels ${channels.scoreboard_pretty_id} & ${channels.scoreboard_ugly_id}`)

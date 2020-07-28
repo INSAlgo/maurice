@@ -14,12 +14,15 @@ module.exports = {
     else
      registerhrusr(req.body).then(result => {
 
-       console.log(`[api] bound ${req.body.discord_id} to hr account : ${req.body.hr_username}`);
-       res.sendStatus(200);
+       if (result) {
+         console.log(`[api] bound ${req.body.discord_id} to hr account : ${req.body.hr_username}`);
+         res.sendStatus(200);
+       } else
+         throw new APIError(500, "failed to register user for unknown reasons")
 
      }).catch(err => {
 
-       if (err.constructor.name == "APIError")
+       if (err.constructor.name === "APIError")
          res.status(err.httpCode).send(err.msg);
        else {
          console.error(err);

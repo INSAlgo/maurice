@@ -25,6 +25,11 @@ function connect(callback) {
 	client.connect(err => {
 	  if (!err)
 	    callback(err);
+	  else {
+	  	
+  		console.error("[startup] failed to connect to database, check db status & config files")
+  		console.error(err)
+	  }
 	});	
 }
 
@@ -32,8 +37,6 @@ async function selectSchema() {
 
 	return client.query(`SET search_path TO '${db_info.schema}';`);
 }
-
-// TODO : clean some shit (remove useless some selectSchema bullshit)
 
 async function isUserRegistered(discord_id, hr_username) {
 
@@ -62,7 +65,11 @@ async function insertUser(discord_id, hr_username) {
 async function getOnlineAlgorithmCount() {
 
 	return ax.get(hr_endpoints.getAlgorithmCount(), hr_endpoints.default_options)
-	.then(res => res.data.total)
+		.then(res => res.data.total)
+		.catch(err => {
+			console.err("[api][hr_algo_count]" + err.stack)
+			throw new APIError(504, "error while trying to access hackerrank's api")
+		})
 }
 
 async function getDatabaseAlgorithmCount() {
@@ -70,13 +77,16 @@ async function getDatabaseAlgorithmCount() {
 	return selectSchema()
 	.then(() => client.query(`SELECT COUNT(*) FROM ${db_info.algorithms_table}`))
 	.then(res => res.rows[0].count)
-	.catch(err => console.err("[api][db_algo_count]" + err.stack))
+	.catch(err => {
+		console.err("[api][db_algo_count]" + err.stack)
+		throw new APIError(500, "error while trying to read from db")
+	})
 }
 
 async function loadAllAlgorithms() {
 
 	return selectSchema()
-	.then( () => getDatabaseAlgorithmCount() ).then(dbCount => 
+	.then( () => getDatabaseAlgorithmCount() ).then(dbCount =>
 														getOnlineAlgorithmCount().then(onlineCount => { 
 															return { 
 																db : dbCount, 
@@ -100,7 +110,12 @@ async function regenAlgorithmDatabase(total) {
 	for (let i = 0; i < total; i+= 50)
 		requests.push(ax.get(hr_endpoints.getAlgorithms(i, step), hr_endpoints.default_options))
 
-	return ax.all(requests).then(ax.spread( (...resps) => {
+	return ax.all(requests)
+		.catch(err => {
+			console.err("[api][regendb]" + err.stack)
+			throw new APIError(504, "impossible to get all of the algorithms from hackerrank's api ")
+		})
+		.then(ax.spread( (...resps) => {
 		const models = [];
 		let model;
 		for (let i = 0; i < resps.length; ++i)
@@ -116,6 +131,10 @@ async function regenAlgorithmDatabase(total) {
 
 		return client.query(pgf(`INSERT INTO ${db_info.algorithms_table}(slug, difficulty, category) VALUES %L ON CONFLICT DO NOTHING`, models))
 		.then(res => { console.log(`[api][regendb] added ${res.rowCount} algorithms to the db`); return res.rowCount })
+		.catch(err => {
+			console.err("[api][regendb]" + err.stack)
+			throw new APIError(500, "error trying to communicate with db ")
+		})
 	})).then(altered => getDatabaseAlgorithmCount().then(count => { return { db_size : count, altered : altered } }))
 }
 
@@ -185,7 +204,7 @@ async function updateScoreboard() {
 	.then( res => { // treat the data for score to have Number type 
 		
 		for (let i = 0; i < res.rows.length; ++i)
-			if (res.rows[i].score.constructor.name != "Number")
+			if (res.rows[i].score.constructor.name !== "Number")
 				res.rows[i].score = parseFloat(res.rows[i].score);
 
 		return res.rows;
@@ -223,13 +242,13 @@ async function updateScoreboard() {
 		const treated_results = [];
 		const errors = [];
 		for (let res of results) {
-			if (res.value != undefined) {
+			if (res.value !== undefined) {
 				treated_results.push({
 					discord_id : res.value.discord_id,
 					hr_username: res.value.hr_username,
       				previousScore: res.value.previousScore,
       				score: res.value.score,
-      				more: res.value.more != undefined ? res.value.more : ""
+      				more: res.value.more ? res.value.more : ""
       			})
 			}
 			else
@@ -316,9 +335,9 @@ async function evaluateUserScore(user_info, user_response, challenges) {
 				const challenge = response_data.models[i];
 
 				// if it isn't the last algorithm we checked last time we updated the score (this means we're still on the recent side of the list)
-				if (challenge.ch_slug != last_challenge_slug && !(response_data.last_page && i == response_data.models.length - 1)) {
+				if (challenge.ch_slug !== last_challenge_slug && !(response_data.last_page && i === response_data.models.length - 1)) {
 					const ch = challenges.get(challenge.ch_slug)
-					if (ch != undefined) {// if the algorithm is known
+					if (ch) {// if the algorithm is known
 						if ((new Date(challenge.created_at)).getTime() >= date_lower_bound) {
 							score += parseFloat((hr_endpoints.difficultyToPoints(ch.difficulty) * ch.multiplier));
 							newChallenges.push( {ch_slug : challenge.ch_slug, "challenge" : challenge } )
@@ -327,12 +346,12 @@ async function evaluateUserScore(user_info, user_response, challenges) {
 						unknownChallenges.push( { ch_slug : challenge.ch_slug, "challenge" : challenge } )
 
 					// now out of the if bc we want an accurate unknownChallenge count
-					new_last_challenge_slug = new_last_challenge_slug == undefined ? challenge.ch_slug : new_last_challenge_slug;
+					new_last_challenge_slug = !new_last_challenge_slug ? challenge.ch_slug : new_last_challenge_slug;
 				}
-				else return { discord_id : user_info.discord_id, hr_username : user_info.hr_username, previousScore : user_info.score, score : score, last_challenge_slug : (new_last_challenge_slug == undefined ? last_challenge_slug : new_last_challenge_slug), more : { stop_info : "normal behavior", unknownChallenges : unknownChallenges, newChallenges : newChallenges } }
+				else return { discord_id : user_info.discord_id, hr_username : user_info.hr_username, previousScore : user_info.score, score : score, last_challenge_slug : (!new_last_challenge_slug ? last_challenge_slug : new_last_challenge_slug), more : { stop_info : "normal behavior", unknownChallenges : unknownChallenges, newChallenges : newChallenges } }
 			}
 		else
-			return { discord_id : user_info.discord_id, hr_username : user_info.hr_username, previousScore : user_info.score, score : score, last_challenge_slug : (new_last_challenge_slug == undefined ? last_challenge_slug : new_last_challenge_slug), more : { stop_info : "empty response, no challenges resolved?", unknownChallenges : unknownChallenges, newChallenges : newChallenges } }
+			return { discord_id : user_info.discord_id, hr_username : user_info.hr_username, previousScore : user_info.score, score : score, last_challenge_slug : (!new_last_challenge_slug ? last_challenge_slug : new_last_challenge_slug), more : { stop_info : "empty response, no challenges resolved?", unknownChallenges : unknownChallenges, newChallenges : newChallenges } }
 
 		// if we didn't return, there's still more algorithms to get from the api so let's do it fuckers
 		return getRecentResolved(response_data.cursor, 1000) // get new request and response data from the api (1000 in case the max limit augments, we'll not have to get back here and modify it)
@@ -346,13 +365,13 @@ async function evaluateUserScore(user_info, user_response, challenges) {
 // update user data in db
 async function updateUserInfos(hr_username, score, last_challenge_slug, new_challenges_count, new_unknown_count) {
 
-	if (score.constructor.name != "Number")
+	if (score.constructor.name !== "Number")
 		score = parseFloat(score);
 
-	if (new_challenges_count.constructor.name != "Number")
+	if (new_challenges_count.constructor.name !== "Number")
 		new_challenges_count = parseFloat(new_challenges_count);
 
-	if (new_unknown_count.constructor.name != "Number")
+	if (new_unknown_count.constructor.name !== "Number")
 		new_unknown_count = parseFloat(new_unknown_count);
 
 	return selectSchema()

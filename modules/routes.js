@@ -8,7 +8,7 @@ const loadRoutes = function(app) {
 	for (const file of routesFiles) {
 	  const route = require(`../routes/${file}`);
 	  routes.set(route.route, route);
-	  app[route.method] && app[route.method].constructor.name == "Function" && app[route.method] && app[route.method](route.route, route.callback);
+	  app[route.method] && app[route.method].constructor.name === "Function" && app[route.method] && app[route.method](route.route, route.callback);
 	}
 
 	return routes

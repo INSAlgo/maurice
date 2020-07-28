@@ -54,7 +54,7 @@ module.exports = function(url) {
 			tryDeparts : function(str, msg) {
 
 				for (obj in this) {
-					if (this[obj].constructor.name == "Departement" && str.toUpperCase() === this[obj].abv) {
+					if (this[obj].constructor.name === "Departement" && str.toUpperCase() === this[obj].abv) {
 		
 						console.log("found the depart :")
 						console.log(this[obj])
