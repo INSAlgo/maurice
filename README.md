@@ -11,7 +11,7 @@ Pour stimuler et faire vivre l'association après les [crises majeures](https://
 * Une connexion internet, mais bon c'est logique, c'est un bot discord et un serveur web quand même
 * Un [token de bot Discord](https://discord.com/developers/applications)
 * Un port ouvert pour les entrées et sorties du serveur web / API
-* Une base de données PostgreSQL (à renseigner dans `web_api_config.json`). Les tables du schéma utilisé (le nom de schéma est configurable) peuvent être générées grâce au script [`make_tables.sql`](https://github.com/INSAlgo/maurice/blob/master/sql/make_tables.sql)
+* Une base de données PostgreSQL (à renseigner dans `web_api_config.json`). Les tables du schéma utilisé (le nom de schéma est configurable) peuvent être générées grâce au script [`make_schema.sql`](https://github.com/INSAlgo/maurice/blob/master/sql/make_schema.sql)
 
 ## Installation
 1. cloner le repo `git clone https://github.com/INSAlgo/maurice maurice`
