@@ -64,7 +64,6 @@ emitter.on('server-running', function() {
 
 // setup web-server
 app.set('render engine', 'ejs')
-.use(express.static(__dirname + '/public'))
 .use(bodyParser.urlencoded({ extended: true }))
 .use(bodyParser.json());
 // load routes & print them
