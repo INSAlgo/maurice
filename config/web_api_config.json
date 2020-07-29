@@ -2,7 +2,7 @@
 	"webUrl" : "127.0.0.1:3000",
 	"db_info" : {
 		"user" : "maurice",
-		"host" : "localhost",
+		"host" : "maurice-db",
 		"database" : "maurice",
 		"password" : "BOT Maurice",
 		"port" : 5432,
