@@ -37,7 +37,12 @@ Pour stimuler et faire vivre l'association après les [crises majeures](https://
 git clone https://github.com/INSAlgo/maurice
 cd maurice
 nano config/maurice_config.json # Mettre le token Discord
-docker-compose up -d # Pray
+docker-compose up -d
+docker exec -i maurice-db psql -U maurice < sql/make_schema.sql # Charger le schéma postgres
+docker-compose down # Relance du serveur
+docker-compsoe up -d
 ```
 
 Pour arrêter le serveur : `docker-compose down`
+
+Conseil pour le dev : utiliser nodemon en décommentant la ligne dans le Dockerfile pour avoir accès au live-reload 

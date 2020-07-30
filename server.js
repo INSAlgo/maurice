@@ -85,7 +85,7 @@ for (const file of commandFiles) {
 
 // bot connecté
 client.on('ready', () => {
-  console.log("[discord] i'm in pussies : id = " + client.user.id)
+  console.log("[discord] connected : id = " + client.user.id)
 
   emitter.emit('scoreboard-update-discord');
 });

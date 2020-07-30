@@ -4,8 +4,9 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN npm install --silent
-COPY . .
+COPY . /app
 
 EXPOSE 3000
 
+#CMD ["./node_modules/nodemon/bin/nodemon.js", "server.js"]
 CMD ["node", "server.js"]

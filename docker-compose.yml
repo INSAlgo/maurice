@@ -1,4 +1,4 @@
-version: '3.6'
+version: '3.8'
 
 services:
   app:
@@ -12,6 +12,8 @@ services:
       - db
     expose:
       - "3000"
+    volumes:
+    - ./:/app
 
   db:
     image: postgres:latest
