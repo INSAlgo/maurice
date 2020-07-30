@@ -1,15 +1,15 @@
 {
-	"webUrl" : "localhost:3000",
-	"token" : "NzMwODM0MjQwMTg2NDgyNzc4.XxcMGg.AKyNMJRI8agR5cEPxaij0n6z5AY",
+	"webUrl" : "127.0.0.1:3000",
+	"token" : "TO BE SET",
 	"prefix" : "!",
-	"scoreboard_refresh" : 1200000,
+	"scoreboard_refresh" : 12000000,
 	"channels" : {
-		"spambot_id" : "735276740099833949",
-		"scoreboard_ugly_id" : "735217954647572530",
-		"scoreboard_pretty_id" : "735296961401454643"
+		"spambot_id" : "737782524629221436",
+		"scoreboard_ugly_id" : "737803528428453978",
+		"scoreboard_pretty_id" : "737803565405437973"
 	},
 	"permissions" : {
-		"admin" : "709091409746985002",
+		"admin" : "716737513535963180",
 		"bypass" : ["ping", "dep"]
 	},
 	"scoreboard_size" : 100

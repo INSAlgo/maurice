@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: maurice-node
+    environment:
+      - DATABASE_URL=postgres://maurice@maurice-db/maurice
+    depends_on:
+      - db
+    networks:
+      - db
+    expose:
+      - "3000"
+
+  db:
+    image: postgres:latest
+    container_name: maurice-db
+    networks:
+      - db
+    environment:
+      - POSTGRES_USER=maurice
+      - POSTGRES_DB=maurice
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - db:/var/lib/postgresql/data
+
+networks:
+  db: {}
+
+volumes:
+  db: {}
