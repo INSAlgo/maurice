@@ -19,7 +19,15 @@ module.exports = {
 					discord_id : member[0],
 					hr_username : args[args.length - 1]
 				})
-			.then(resp => console.log("[discord][register] sent register request")).catch(err => console.error(`[discord][register] ${err.response.status} ${err.response.statusText} : ${err.response.data}`));	
+			.then(resp => console.log("[discord][register] sent register request")).catch(err => {
+
+				if (!err.reponse)
+					console.error(`[discord][register] ${err.response.status} ${err.response.statusText} : ${err.response.data}`)
+				else if (err.errono && err.code && err.address && err.port)
+					console.error(`[discord][register] error ${err.errorno} on ${err.syscall} to ${err.address}:${err.port}`)
+				else
+					console.error(`[discord][register] unexpected error occurred`, err.stack)
+			});
 		}
 	}
 };

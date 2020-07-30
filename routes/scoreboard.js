@@ -15,10 +15,10 @@ module.exports = {
   		    if (req.query.pretty)
   		      res.status(200).send(prettyPrintScoreboard(qres))
   		    else
-  		      res.status(200).json(qres)
+            db.getUserCount().then(userCount => res.status(200).json( {users : qres, total : userCount.count} ));
   		  }
   		  else
-  		    res.status(400).send(`category ${json.category} provided doesn't correspond to any registered challenges`)
+  		    res.status(500).send(`error occurred while attempting to get scoreboard`)
   		})
   		.catch(err => console.error(err))
   		.catch(err => res.status(err.httpCode).send(err.msg))

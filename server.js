@@ -188,10 +188,10 @@ function updateDiscordScoreboard() {
 
   
   if ((!scorechan_ugly || scorechan_ugly.type !== 'text') && (!scorechan_pretty || scorechan_pretty.type !== 'text'))
-    return console.error(`[discord][scoreboard-update] IMPORTANT! none of the (pretty / ugly) scoreboard channel id point to any TEXT based channel, please change this in maurice.json`)
+    return console.error(`[discord][scoreboard-update] IMPORTANT! none of the (pretty / ugly) scoreboard channel id point to any TEXT based channel, please change this in maurice_config.json`)
 
   if (!spamchan || spamchan.type !== 'text')
-    return console.error(`[discord][scoreboard-update] IMPORTANT! the spam channel id you provided doesn't point to any TEXT based channel, please change this in maurice.json`)
+    return console.error(`[discord][scoreboard-update] IMPORTANT! the spam channel id you provided doesn't point to any TEXT based channel, please change this in maurice_config.json`)
 
   console.log(`[discord][scoreboard-update] updating scoreboard in channels ${channels.scoreboard_pretty_id} & ${channels.scoreboard_ugly_id}`)
 
@@ -207,7 +207,6 @@ function updateDiscordScoreboard() {
 
     return db.getScoreboard(scoreboard_size || 10)
     .then(qres => message.edit(printTypes[pretty ? 1 : 0](qres)))
-      //texte à mettre : prettyPrintScoreboard(/scoreboard)
   }
 
   // le code de la honte
