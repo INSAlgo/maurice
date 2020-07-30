@@ -17,6 +17,6 @@
 		"hard" : 100,
 		"expert" : 200
 	},
-	"scoreboard_refresh" : 120000,
+	"scoreboard_refresh" : 1200000,
 	"date_lower_bound" : 0
 }

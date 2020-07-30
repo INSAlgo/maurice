@@ -2,7 +2,7 @@
 	"webUrl" : "127.0.0.1:3000",
 	"token" : "TO BE SET",
 	"prefix" : "!",
-	"scoreboard_refresh" : 12000000,
+	"scoreboard_refresh" : 1200000,
 	"channels" : {
 		"spambot_id" : "737782524629221436",
 		"scoreboard_ugly_id" : "737803528428453978",

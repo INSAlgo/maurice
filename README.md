@@ -6,9 +6,6 @@ Challenge, Compétition, Algorithmie
 ## C'est quoi cette bestiole
 Pour stimuler et faire vivre l'association après les [crises majeures](https://prologin.org/news/2020/03/29/prologin-2020-et-le-coronavirus-2019/) de 2020, notre génial bureau a pensé à créer un [robot Discord](https://top.gg/) offrant un nouveau moyen en temps réel de se [mesurer aux autres](https://fr.wikipedia.org/wiki/Bataille_de_pouces), et d'aller toujours plus loin pour progresser dans la discipline.
 
-## Installation via docker-compose
-`docker-compose up -d`
-
 ## Commandes du bot
 * `!ping` Pour savoir si le bot est en marche
 * `!dep [département]` Pour avoir des infos fiables et vérifées sur un département insalien (9 dispos, nique le FIMI)
@@ -32,3 +29,15 @@ Pour stimuler et faire vivre l'association après les [crises majeures](https://
   * d'autres choses (voir les différents [endpoints](https://github.com/INSAlgo/maurice/blob/master/routes))
 * Le serveur web réagit aux requêtes faites sur les [endpoints](https://github.com/INSAlgo/maurice/blob/master/routes) prévus puis répond
 * Périodiquement, l'API recalcule les points des utilisateurs et **Maurice** met à jour les messages contenant les scoreboard sur discord
+
+
+## Déploiement du bot
+(Une fois docker installé)
+```bash
+git clone https://github.com/INSAlgo/maurice
+cd maurice
+nano config/maurice_config.json # Mettre le token Discord
+docker-compose up -d # Pray
+```
+
+Pour arrêter le serveur : `docker-compose down`
