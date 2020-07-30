@@ -1,3 +1,4 @@
+const { webUrl } = require('../config/web_api_config.json')
 const hr_endpoints = require('../modules/hr_endpoints.js')
 const APIError = require('../modules/api_error.js');
 const db = require('../modules/database.js')
@@ -14,13 +15,19 @@ module.exports = {
     else
      registerhrusr(req.body).then(result => {
 
-       if (result) {
-         console.log(`[api] bound ${req.body.discord_id} to hr account : ${req.body.hr_username}`);
-         res.sendStatus(200);
-       } else
-         throw new APIError(500, "failed to register user for unknown reasons")
+      return ax.get(`http://${webUrl}/scoreboard_refresh/`).then(ans => {
 
-     }).catch(err => {
+        if (result && ans && ans.status == 200) {
+          console.log(`[api] bound ${req.body.discord_id} to hr account : ${req.body.hr_username}`);
+          res.sendStatus(200);
+        } else {
+          res.sendStatus(500)
+          throw new APIError(500, "failed to register user for unknown reasons")
+        }
+      })
+
+     })
+      .catch(err => {
 
        if (err.constructor.name === "APIError")
          res.status(err.httpCode).send(err.msg);

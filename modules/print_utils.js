@@ -16,7 +16,7 @@ function uglyPrintScoreboard(qres) {
     // WARNING : risky, maybe (idk for what reason) the user isn't cached. will get undefined instead of it's name
     //discord_name = ((temp = client.users.cache.get(userdata.discord_id)) && temp.username) || "not cached";
     return `${qres.length - i}. <@${userdata.discord_id}>  ${userdata.score}`
-  }).reverse().join("\n");
+  }).join("\n");
 }
 
 function prettyPrintScoreboard(qres) {
@@ -30,7 +30,7 @@ function prettyPrintScoreboard(qres) {
     let temp;
     discord_name = ((temp = client.users.cache.get(userdata.discord_id)) && temp.username) || "not cached";
     last_challenge_slug = userdata.last_challenge_slug || " X "
-    toFormat.unshift([discord_name, userdata.hr_username, userdata.score, last_challenge_slug])
+    toFormat.push([discord_name, userdata.hr_username, userdata.score, last_challenge_slug])
   }
   toFormat.unshift(["discord", "hackerrank", "score", "dernier"])
   return table_format.table(toFormat).replace(/"/g," ");

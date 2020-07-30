@@ -10,6 +10,7 @@ module.exports = {
 
 	connect : connect,
 	insertUser : insertUser,
+	getUserCount : getUserCount,
 	getScoreboard : getScoreboard,
 	applyMultiplier : applyMultiplier,
 	updateScoreboard : updateScoreboard,
@@ -377,4 +378,11 @@ async function updateUserInfos(hr_username, score, last_challenge_slug, new_chal
 	return selectSchema()
 	.then( () => client.query(`UPDATE ${db_info.users_table} SET score=${score}, last_challenge_slug='${last_challenge_slug}', total_resolved=(total_resolved+${new_challenges_count}), total_unknown_resolved=(total_unknown_resolved+${new_unknown_count}) WHERE ${db_info.users_table}.hr_username='${hr_username}';`))
 	.then(res => res.rowCount)
+}
+
+async function getUserCount() {
+
+	return selectSchema()
+	.then( () => client.query(`SELECT COUNT(*) FROM ${db_info.users_table}`))
+	.then( res => res.rows[0] )
 }
