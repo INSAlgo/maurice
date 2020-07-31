@@ -37,10 +37,10 @@ Pour stimuler et faire vivre l'association après les [crises majeures](https://
 git clone https://github.com/INSAlgo/maurice
 cd maurice
 nano config/maurice_config.json # Mettre le token Discord
-docker-compose up -d
+docker-compose up -d --build
 docker exec -i maurice-db psql -U maurice < sql/make_schema.sql # Charger le schéma postgres
 docker-compose down # Relance du serveur
-docker-compsoe up -d
+docker-compose up -d
 ```
 
 Pour arrêter le serveur : `docker-compose down`
