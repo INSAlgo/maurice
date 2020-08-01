@@ -221,7 +221,7 @@ function updateDiscordScoreboard() {
           "color": 7865059,
           "timestamp": new Date(),
           "footer": {
-            "icon_url": "http://cdn.discordapp.com/avatars/730834240186482778/4cb3fca57b2b296ff519ca385196cfc4.png",
+            "icon_url": client.user.avatarURL(),
             "text": "Généré par Maurice"
           }
         }
