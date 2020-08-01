@@ -13,7 +13,8 @@ module.exports = {
     if (!req.body || !req.body.discord_id || !req.body.hr_username)
       res.status(400).send('wrong data provided. are you dumb, stupid or dumb ? huh?');
     else
-     registerhrusr(req.body).then(result => {
+     registerhrusr(req.body)
+     .then(result => {
 
       return ax.get(`http://${webUrl}/scoreboard_refresh/`).then(ans => {
 

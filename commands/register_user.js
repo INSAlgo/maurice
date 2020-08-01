@@ -19,7 +19,8 @@ module.exports = {
 					discord_id : member[0],
 					hr_username : args[args.length - 1]
 				})
-			.then(resp => console.log("[discord][register] sent register request")).catch(err => {
+			.then(resp => console.log("[discord][register] sent register request"))
+			.catch(err => {
 
 				if (!err.reponse)
 					console.error(`[discord][register] ${err.response.status} ${err.response.statusText} : ${err.response.data}`)

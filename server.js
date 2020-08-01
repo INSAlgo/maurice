@@ -15,6 +15,7 @@ const app = express();
 
 // c'est infame, j'ai honte de moi
 let last_scoreboard_update = undefined;
+let is_updating = false;
 
 // todo use dotenv
 const { token, prefix, channels, scoreboard_size, permissions } = require('./config/maurice_config.json');
@@ -136,6 +137,10 @@ client.on('message', msg => {
 // when an api scoreboard update is requested
 emitter.on('scoreboard-update-api', function () {
 
+  if (is_updating)
+    throw new APIError(429, "an update is already in progress");
+
+  is_updating = true;
   console.log('[api][scoreboard-update] update time! but first let\'s refresh the db');
   ax.get(`http://${webUrl}/regendb`).then(res => {
     if (res.status != 500) {
@@ -151,6 +156,7 @@ emitter.on('scoreboard-update-api', function () {
 
         // à ne catch que par l'api puisque théoriquement on doit pouvoir séparer totalement le bot et l'api
         emitter.emit('scoreboard-updated-api');
+        is_updating = false
 
         for (let user of res)
           console.log('[api][scoreboard-update] ' + user.hr_username + ' has done new ' + user.more.unknownChallenges.length + ' unknown challenges')
@@ -165,10 +171,16 @@ emitter.on('scoreboard-update-api', function () {
       emitter.emit('scoreboard-update-failed-api', err.response.status, err.response.statusText, err.response.data);
       console.error(`[api][scoreboard-update] scoreboard update failed : ${err.response.data}`)
     }
+    else if (err.constructor.name === "APIError") {
+      emitter.emit('scoreboard-update-failed-api', err.httpCode, err.msg, undefined)
+      console.error(`[api][scoreboard-update] scoreboard update failed`, err);
+    }
     else {
       emitter.emit('scoreboard-update-failed-api', 500, "Internal Server Error", undefined)
       console.error(`[api][scoreboard-update] scoreboard update failed`, err);
     }
+
+    is_updating = false
   })
 })
 
@@ -203,9 +215,20 @@ function updateDiscordScoreboard() {
   const editMyMessage = function(message, pretty) {
     
     const printTypes = [uglyPrintScoreboard, markdownPrettyPrint];
+    const embed = 
+    {
+        "embed": {
+          "color": 7865059,
+          "timestamp": new Date(),
+          "footer": {
+            "icon_url": "http://cdn.discordapp.com/avatars/730834240186482778/4cb3fca57b2b296ff519ca385196cfc4.png",
+            "text": "Généré par Maurice"
+          }
+        }
+    }
 
     return db.getScoreboard(scoreboard_size || 10)
-    .then(qres => message.edit(printTypes[pretty ? 1 : 0](qres)))
+    .then(qres => message.edit(printTypes[pretty ? 1 : 0](qres), embed))
   }
 
   // le code de la honte
