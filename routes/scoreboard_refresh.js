@@ -15,28 +15,23 @@ module.exports = {
         .then(result => {
 
           if (result)
-            updateUser(req.query.user)
-            .then(result => res.sendStatus(200))
-            .catch(err => {
+            db.updateSingleUserScore({discord_id:req.query.user})
+                .then(result => res.status(200).json(result))
+                .catch(err => {
 
-              if (err.constructor.name === "APIError")
-                res.status(err.httpCode).send(err.msg);
-              else {
-                res.sendStatus(500)
-                console.err('[api][updateUser] error occurred while trying to update user ' + req.query.user, err.stack)
-              }
-            })
+                if (err.constructor.name === "APIError")
+                  res.status(err.httpCode).send(err.msg);
+                else {
+                  res.sendStatus(500)
+                  console.err('[api][updateUser] error occurred while trying to update user ' + req.query.user, err.stack)
+                }
+                })
           else
             res.status(400).send("user doesn't exist")
         })
       } else
         globalUpdate(req, res);
 	}
-}
-
-function updateUser(discord_id) {
-
-  return null;
 }
 
 function globalUpdate(req, res) {

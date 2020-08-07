@@ -16,17 +16,20 @@ module.exports = {
      registerhrusr(req.body)
      .then(result => {
 
-      return ax.get(`http://${webUrl}/scoreboard_refresh/`).then(ans => {
+       if (!result)
+         throw new APIError(500, "failed to register user for unknown reasons")
+       else
+         return ax.get(`http://${webUrl}/scoreboard_refresh?user=${req.body.discord_id}`)
+            .then(ans => {
 
-        if (result && ans && ans.status == 200) {
-          console.log(`[api] bound ${req.body.discord_id} to hr account : ${req.body.hr_username}`);
-          res.sendStatus(200);
-        } else {
-          res.sendStatus(500)
-          throw new APIError(500, "failed to register user for unknown reasons")
-        }
-      })
-
+              if (ans && ans.status == 200) {
+                console.log(`[api] bound ${req.body.discord_id} to hr account : ${req.body.hr_username}`);
+                res.status(200).json(ans.data);
+              } else {
+                res.sendStatus(500)
+                throw new APIError(500, "failed to refresh user score for unknown reasons")
+              }
+            })
      })
       .catch(err => {
 

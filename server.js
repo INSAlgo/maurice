@@ -196,9 +196,9 @@ function updateDiscordScoreboard() {
   const scorechan_ugly = client.channels.cache.get(channels.scoreboard_ugly_id)
   const scorechan_pretty = client.channels.cache.get(channels.scoreboard_pretty_id)
   const spamchan = client.channels.cache.get(channels.spambot_id)
+  const todo = { ugly_err : undefined, pretty_err : undefined }
 
-  
-  if ((!scorechan_ugly || scorechan_ugly.type !== 'text') && (!scorechan_pretty || scorechan_pretty.type !== 'text'))
+  if ( (todo.ugly_err = (!scorechan_ugly || scorechan_ugly.type !== 'text')) && !(todo.pretty_err = (!scorechan_pretty || scorechan_pretty.type !== 'text')) )
     return console.error(`[discord][scoreboard-update] IMPORTANT! none of the (pretty / ugly) scoreboard channel id point to any TEXT based channel, please change this in maurice_config.json`)
 
   if (!spamchan || spamchan.type !== 'text')
@@ -211,7 +211,6 @@ function updateDiscordScoreboard() {
     return channel.messages.fetchPinned()
     .then(messages => messages.find(message => !message.deleted && message.author.id == client.user.id))
   }
-
   const editMyMessage = function(message, pretty) {
     
     const printTypes = [uglyPrintScoreboard, markdownPrettyPrint];
@@ -273,5 +272,9 @@ function updateDiscordScoreboard() {
       }).catch(err => rej(err))
   );
 
-  return Promise.allSettled([updateUgly, updatePretty, sendDiscordUpdateMessages])
+  const todoArray = [sendDiscordUpdateMessages]
+  if (!todo.ugly_err) todoArray.push(updateUgly)
+  if (!todo.pretty_err) todoArray.push(updatePretty)
+
+  return Promise.allSettled(todoArray)
 }

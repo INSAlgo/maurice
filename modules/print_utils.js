@@ -13,9 +13,9 @@ function uglyPrintScoreboard(qres) {
 
     let temp;
     
-    // WARNING : risky, maybe (idk for what reason) the user isn't cached. will get undefined instead of it's name
+    // WARNING : risky, maybe (idk for what reason) the user isn't cached. will get undefined instead of its name
     //discord_name = ((temp = client.users.cache.get(userdata.discord_id)) && temp.username) || "not cached";
-    return `${qres.length - i}. <@${userdata.discord_id}>  ${userdata.score}`
+    return `${i + 1}. <@${userdata.discord_id}>  ${userdata.score}`
   }).join("\n");
 }
 
