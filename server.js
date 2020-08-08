@@ -15,6 +15,7 @@ const app = express();
 
 // c'est infame, j'ai honte de moi
 let last_scoreboard_update = undefined;
+let is_updating = false;
 
 // todo use dotenv
 const { token, prefix, channels, scoreboard_size, permissions } = require('./config/maurice_config.json');
@@ -136,6 +137,10 @@ client.on('message', msg => {
 // when an api scoreboard update is requested
 emitter.on('scoreboard-update-api', function () {
 
+  if (is_updating)
+    throw new APIError(429, "an update is already in progress");
+
+  is_updating = true;
   console.log('[api][scoreboard-update] update time! but first let\'s refresh the db');
   ax.get(`http://${webUrl}/regendb`).then(res => {
     if (res.status != 500) {
@@ -151,6 +156,7 @@ emitter.on('scoreboard-update-api', function () {
 
         // à ne catch que par l'api puisque théoriquement on doit pouvoir séparer totalement le bot et l'api
         emitter.emit('scoreboard-updated-api');
+        is_updating = false
 
         for (let user of res)
           console.log('[api][scoreboard-update] ' + user.hr_username + ' has done new ' + user.more.unknownChallenges.length + ' unknown challenges')
@@ -165,10 +171,16 @@ emitter.on('scoreboard-update-api', function () {
       emitter.emit('scoreboard-update-failed-api', err.response.status, err.response.statusText, err.response.data);
       console.error(`[api][scoreboard-update] scoreboard update failed : ${err.response.data}`)
     }
+    else if (err.constructor.name === "APIError") {
+      emitter.emit('scoreboard-update-failed-api', err.httpCode, err.msg, undefined)
+      console.error(`[api][scoreboard-update] scoreboard update failed`, err);
+    }
     else {
       emitter.emit('scoreboard-update-failed-api', 500, "Internal Server Error", undefined)
       console.error(`[api][scoreboard-update] scoreboard update failed`, err);
     }
+
+    is_updating = false
   })
 })
 
@@ -184,9 +196,9 @@ function updateDiscordScoreboard() {
   const scorechan_ugly = client.channels.cache.get(channels.scoreboard_ugly_id)
   const scorechan_pretty = client.channels.cache.get(channels.scoreboard_pretty_id)
   const spamchan = client.channels.cache.get(channels.spambot_id)
+  const todo = { ugly_err : undefined, pretty_err : undefined }
 
-  
-  if ((!scorechan_ugly || scorechan_ugly.type !== 'text') && (!scorechan_pretty || scorechan_pretty.type !== 'text'))
+  if ( (todo.ugly_err = (!scorechan_ugly || scorechan_ugly.type !== 'text')) && !(todo.pretty_err = (!scorechan_pretty || scorechan_pretty.type !== 'text')) )
     return console.error(`[discord][scoreboard-update] IMPORTANT! none of the (pretty / ugly) scoreboard channel id point to any TEXT based channel, please change this in maurice_config.json`)
 
   if (!spamchan || spamchan.type !== 'text')
@@ -199,13 +211,23 @@ function updateDiscordScoreboard() {
     return channel.messages.fetchPinned()
     .then(messages => messages.find(message => !message.deleted && message.author.id == client.user.id))
   }
-
   const editMyMessage = function(message, pretty) {
     
     const printTypes = [uglyPrintScoreboard, markdownPrettyPrint];
+    const embed = 
+    {
+        "embed": {
+          "color": 7865059,
+          "timestamp": new Date(),
+          "footer": {
+            "icon_url": client.user.avatarURL(),
+            "text": "Généré par Maurice"
+          }
+        }
+    }
 
     return db.getScoreboard(scoreboard_size || 10)
-    .then(qres => message.edit(printTypes[pretty ? 1 : 0](qres)))
+    .then(qres => message.edit(printTypes[pretty ? 1 : 0](qres), embed))
   }
 
   // le code de la honte
@@ -250,5 +272,9 @@ function updateDiscordScoreboard() {
       }).catch(err => rej(err))
   );
 
-  return Promise.allSettled([updateUgly, updatePretty, sendDiscordUpdateMessages])
+  const todoArray = [sendDiscordUpdateMessages]
+  if (!todo.ugly_err) todoArray.push(updateUgly)
+  if (!todo.pretty_err) todoArray.push(updatePretty)
+
+  return Promise.allSettled(todoArray)
 }
