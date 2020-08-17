@@ -3,7 +3,8 @@ let axios = require('axios')
 
 module.exports = {
 	name: 'refreshlb',
-	description: 'Force le recalcul du tableau des scores !',
+	description: 'force le recalcul du tableau des scores (complet ou un seul utilisateur)',
+	usage: 'refreshlb [username]',
 	execute(client, msg, args) {
 		
 		axios.get(`http://${webUrl}/scoreboard_refresh${msg.mentions.members.size === 1 ? "?user=" + msg.mentions.members.first().id : ""}`)

@@ -1,6 +1,7 @@
 module.exports = {
   name: 'shutup',
-  description: "Removes the mentioned user's messages!",
+  description: "supprime les 100 derniers messages des utilisateurs mentionnés",
+  usage: 'shutup <@discordUser | bot> [@others] [bot]',
   execute(client, msg, args) {
     msg.channel.send("shutup");
   }

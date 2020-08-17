@@ -1,13 +1,14 @@
-let { webUrl } = require('../config/maurice_config.json')
+let { prefix, webUrl } = require('../config/maurice_config.json')
 let axios = require('axios')
 
 module.exports = {
 	name: 'mult',
-	description: 'Applique un multiplicateur de points sur un challenge donné!',
+	description: 'applique un multiplicateur de points sur un challenge donné',
+	usage: 'mult <slug-challenge> <multiplier>',
 	execute(client, msg, args) {
 
-		if (args.length != 2 || isNaN(parseFloat(args[1]))) {
-			msg.reply('Mauvais arguments donnés. Essaye : `!mult <slug> <multiplier>')
+		if (args.length !== 2 || isNaN(parseFloat(args[1]))) {
+			msg.reply('Mauvais arguments donnés. Essaye : `'+ prefix + this.usage + '`')
 			return;
 		}
 

@@ -92,18 +92,16 @@ client.on('ready', () => {
 });
 
 // reception msg discord
-client.on('message', msg => {
-  
-  if (!msg.content.startsWith(prefix) || msg.author.bot || (msg.channel.id !== channels.spambot_id && msg.channel.id !== channels.scoreboard_pretty_id && msg.channel.id !== channels.scoreboard_ugly_id))
+client.on('message', function(msg) {
+
+  if (!msg.content.startsWith(prefix) || msg.author.bot || !Object.values(channels).includes(""+msg.channel.id))
     return;
 
   const args = msg.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
-  if (!msg.member.roles.cache.get(permissions.admin) && !permissions.bypass.includes(command)) {
-    msg.delete({timeout:1000})
-    return;
-  }
+  if (!msg.member.roles.cache.get(permissions.admin) && !permissions.bypass.includes(command))
+    return msg.delete({timeout:1000})
 
   // aucune idée de pourquoi j'ai fait un truc compliqué qui passe par des Promise alors que ça sert à rien
   // def getCmd qui va chercher la commande (command) ds les registered cmds (client.commands)
