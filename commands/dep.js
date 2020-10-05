@@ -6,7 +6,6 @@ module.exports = {
 	description: '?',
 	usage: `<secret>`,
 	execute(client, msg, args) {
-
 		departs.tryDeparts(args[0], msg);
 	}
 };

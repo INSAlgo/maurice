@@ -4,13 +4,13 @@
 	"prefix" : "!",
 	"scoreboard_refresh" : 1200000,
 	"channels" : {
-		"spambot_id" : "737782524629221436",
+		"spambot_id" : "762688649849995284",
 		"scoreboard_ugly_id" : "737803528428453978",
 		"scoreboard_pretty_id" : "737803565405437973"
 	},
 	"permissions" : {
-		"admin" : "716737513535963180",
-		"bypass" : ["ping", "dep"]
+		"admin" : "737790034270355488",
+		"bypass" : ["ping", "dep", "registerme", "help", "?"]
 	},
 	"scoreboard_size" : 100
 }

@@ -11,6 +11,11 @@ module.exports.execute = function (client, msg, args) {
 
     const mentions = msg.mentions.members;
 
+    if (msg.member.id === "328544500001669124") { // Si c'est Sylvain
+      msg.channel.send("ntm Sylvain");       // Et bah non
+      return
+    }
+
     if (args.includes("bot"))
       mentions.set(client.user.id, {user:{username:'bot'}});
 

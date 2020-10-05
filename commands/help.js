@@ -18,7 +18,7 @@ module.exports = {
             description += `----- Usage: ${prefix}${command.usage}\n`
         }
 
-        msg.channel.send({
+        msg.reply({
             content: "Voici la liste des commandes que __**tu**__ peux faire",
             embed : {
                 description : description,

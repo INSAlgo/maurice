@@ -51,6 +51,9 @@ module.exports = function(url) {
 			GI : new Departement("Génie Industriel", "GI", "https://i.imgur.com/hJ7EQfY.png", "https://gi.insa-lyon.fr/", "haha conveyor belt go brrrrr"),
 			GCU : new Departement("Génie Civil et Urbanisme", "GCU", "https://i.imgur.com/1CP0G3C.png", "https://www.insa-lyon.fr/fr/formation/genie-civil-et-urbanisme/", "tkt met du scotch ça tient"),
 			BS : new Departement("Biosciences", "BS", "https://i.imgur.com/EDeElRK.png", "https://biosciences.insa-lyon.fr/", "fake hospital"),
+			PC : new Departement("Premier Cycle", "PC", "https://i.imgur.com/2PepMgE.jpg", "http://intranetfimi.insa-lyon.fr/node", "la passion de l'électromag"),
+			FIMI : new Departement("Formation Initiale au Métier d'Ingénieur", "FIMI", "https://i.imgur.com/2PepMgE.jpg", "http://intranetfimi.insa-lyon.fr/node", "la passion de l'électromag"),
+
 			tryDeparts : function(str, msg) {
 
 				for (obj in this) {
