@@ -92,9 +92,9 @@ client.on('ready', () => {
 });
 
 // reception msg discord
-client.on('message', msg => {
-  
-  if (!msg.content.startsWith(prefix) || msg.author.bot || (msg.channel.id !== channels.spambot_id && msg.channel.id !== channels.scoreboard_pretty_id && msg.channel.id !== channels.scoreboard_ugly_id))
+client.on('message', function(msg) {
+
+  if (!msg.content.startsWith(prefix) || msg.author.bot || !Object.values(channels).includes(""+msg.channel.id))
     return;
 
   const args = msg.content.slice(prefix.length).trim().split(/ +/);

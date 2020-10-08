@@ -12,8 +12,6 @@ services:
       - db
     expose:
       - "3000"
-    volumes:
-    - ./:/app
 
   db:
     image: postgres:latest

@@ -1,18 +1,26 @@
-Maurice, le bot Discord d'[INSAlgo](https://insalgo.fr/)
+Maurice, le bot Discord d'[INSAlgo](https://insalgo.fr/), écrit par Maxence Younsi
 
 # Maurice
 Challenge, Compétition, Algorithmie
 
 ## C'est quoi cette bestiole
-Pour stimuler et faire vivre l'association après les [crises majeures](https://prologin.org/news/2020/03/29/prologin-2020-et-le-coronavirus-2019/) de 2020, notre génial bureau a pensé à créer un [robot Discord](https://top.gg/) offrant un nouveau moyen en temps réel de se [mesurer aux autres](https://fr.wikipedia.org/wiki/Bataille_de_pouces), et d'aller toujours plus loin pour progresser dans la discipline.
+Pour stimuler et faire vivre l'association après les [crises majeures](https://prologin.org/news/2020/03/29/prologin-2020-et-le-coronavirus-2019/) de 2020,
+notre génial bureau a pensé à créer un [robot Discord](https://top.gg/) offrant un nouveau moyen en temps réel de se [mesurer aux autres](https://fr.wikipedia.org/wiki/Bataille_de_pouces),
+et d'aller toujours plus loin pour progresser dans la discipline.
 
 ## Commandes du bot
+### Commandes ne nécéssitant pas d'autorisation
 * `!ping` Pour savoir si le bot est en marche
 * `!dep [département]` Pour avoir des infos fiables et vérifées sur un département insalien (9 dispos, nique le FIMI)
+* `!registerme <pseudo_Hackerrank` S'inscrire dans le scoreboard
+* `!help` Afficher l'aide du bot
+
+### Commandes nécessitant le rôle admin-bot
 * `!register @<utilisateur_discord> <pseudo_Hackerrank>` Inscrire un utilisateur dans le scoreboard INSAlgo 
 * `!mult <slug-challenge> <multiplicateur>` Changer le multiplicateur de points d'un challenge
 * `!multcat <categorie> <multiplicateur>` Changer les multiplicateurs de points des challenges d'une catégorie : 
 * `!refreshlb` Forcer le rafraichissement automatique du scoreboard à s'effectuer (cooldown=10s)
+* `!shutup @<user_discord` Effacer les derniers messages d'une personne (censure !)
 
 ## Configuration
 `TODO`
@@ -46,3 +54,4 @@ docker-compose up -d
 Pour arrêter le serveur : `docker-compose down`
 
 Conseil pour le dev : utiliser nodemon en décommentant la ligne dans le Dockerfile pour avoir accès au live-reload 
+

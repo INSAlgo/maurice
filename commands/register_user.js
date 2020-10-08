@@ -1,15 +1,16 @@
-let { webUrl } = require('../config/maurice_config.json')
+let { prefix, webUrl } = require('../config/maurice_config.json')
 let axios = require('axios')
 
 module.exports = {
 	name: 'register',
-	description: 'Register a HackerRank user ',
+	description: 'lie un compte Hacker Rank à un utilisateur Discord',
+	usage: 'register <@discordUser> <username>',
 	execute(client, msg, args) {
 		
 		if (msg.mentions.members.size !== 1 || args.length > 2) {
 			msg.reply({
 				embed : {
-					description : 'Mauvais nombre d\'arguments donnés. \nEssaye : `!register <@Utilisateur> <username HackerRank>`',
+					description : 'Mauvais nombre d\'arguments donnés. \nEssaye : `' + prefix + this.usage +'`',
 					color : 16711680 // RED
 				}
 			})

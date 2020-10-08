@@ -1,13 +1,14 @@
-let { webUrl } = require('../config/maurice_config.json')
+let { prefix, webUrl } = require('../config/maurice_config.json')
 let axios = require('axios')
 
 module.exports = {
 	name: 'multcat',
-	description: 'Applique un multiplicateur de points sur toute une catégorie de challenges donnée!',
+	description: 'applique un multiplicateur de points sur toute une catégorie de challenges donnée',
+	usage: 'multcat <category> <multiplier>',
 	execute(client, msg, args) {
 
-		if (args.length != 2 || isNaN(parseFloat(args[1]))) {
-			msg.reply('Mauvais arguments donnés. Essaye : `!multcat <category> <multiplier>')
+		if (args.length !== 2 || isNaN(parseFloat(args[1]))) {
+			msg.reply('Mauvais arguments donnés. Essaye : `'+ prefix + this.usage + '`')
 			return;
 		}
 
