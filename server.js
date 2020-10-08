@@ -101,7 +101,7 @@ client.on('message', function(msg) {
   const command = args.shift().toLowerCase();
 
   if (!msg.member.roles.cache.get(permissions.admin) && !permissions.bypass.includes(command))
-    return msg.delete({timeout:1000})
+    return;
 
   // aucune idée de pourquoi j'ai fait un truc compliqué qui passe par des Promise alors que ça sert à rien
   // def getCmd qui va chercher la commande (command) ds les registered cmds (client.commands)
@@ -234,8 +234,10 @@ function updateDiscordScoreboard() {
     if (last_scoreboard_update)
       for (let userdata of last_scoreboard_update)
         if(userdata.more) {
-          for (let resolved of userdata.more.newChallenges)
-            messages_promises.push(spamchan.send(`<@${userdata.discord_id}> a résolu le challenge \`${resolved.ch_slug}\``))
+          const pluriel = userdata.more.newChallenges.length > 1 ? "s" : ""
+          const concat_slugs = "`" + userdata.more.newChallenges.map( resolved => resolved.ch_slug ).join("\`, \`") + "`"
+
+          messages_promises.push(spamchan.send(`<@${userdata.discord_id}> a résolu le${pluriel} challenge${pluriel} \`${concat_slugs}\``))
 
           userdata.more.newChallenges = []
         }
