@@ -233,11 +233,11 @@ function updateDiscordScoreboard() {
     const messages_promises = [];
     if (last_scoreboard_update)
       for (let userdata of last_scoreboard_update)
-        if(userdata.more) {
+        if(userdata.more && userdata.more.newChallenges && userdata.more.newChallenges.length > 0) {
           const pluriel = userdata.more.newChallenges.length > 1 ? "s" : ""
           const concat_slugs = "`" + userdata.more.newChallenges.map( resolved => resolved.ch_slug ).join("\`, \`") + "`"
 
-          messages_promises.push(spamchan.send(`<@${userdata.discord_id}> a résolu le${pluriel} challenge${pluriel} \`${concat_slugs}\``))
+          messages_promises.push(spamchan.send(`<@${userdata.discord_id}> a résolu le${pluriel} challenge${pluriel} ${concat_slugs}`))
 
           userdata.more.newChallenges = []
         }

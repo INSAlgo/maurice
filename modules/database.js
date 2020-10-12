@@ -314,7 +314,7 @@ async function updateScoreboard() {
 					hr_username: res.value.hr_username,
       				previousScore: res.value.previousScore,
       				score: res.value.score,
-      				more: res.value.more ? res.value.more : ""
+      				more: res.value.more ? res.value.more : { stop_info: "unexpected error", newChallenges: [], unknownChallenges: [] }
       			})
 			}
 			else
