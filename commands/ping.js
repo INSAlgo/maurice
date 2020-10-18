@@ -3,6 +3,6 @@ module.exports = {
 	description: 'vérifie que le bot fonctionne',
 	usage: 'ping',
 	execute(client, msg, args) {
-		msg.channel.send("pong :sylvain:");
+		msg.channel.send("pong <:sylvain:737961200587112498>");
 	}
 };
